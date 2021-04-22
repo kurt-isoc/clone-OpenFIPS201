@@ -67,6 +67,9 @@ public final class PIV {
   public static final byte ID_ALG_AES_256 = (byte) 0x0C;
   public static final byte ID_ALG_ECC_P256 = (byte) 0x11;
   public static final byte ID_ALG_ECC_P384 = (byte) 0x14;
+  public static final byte ID_ALG_ECC_CS2 = (byte) 0x27; // Secure Messaging - ECCP256+SHA256
+  public static final byte ID_ALG_ECC_CS7 = (byte) 0x2E; // Secure Messaging - ECCP384+SHA384
+
   //
   // PIV-specific ISO 7816 STATUS WORD (SW12) responses
   //
@@ -908,13 +911,16 @@ public final class PIV {
 
   /** Clears any intermediate authentication status used by 'GENERAL AUTHENTICATE' */
   private void authenticateReset() {
-
-    authenticationContext[OFFSET_AUTH_STATE] = AUTH_STATE_NONE;
-    authenticationContext[OFFSET_AUTH_ID] = (short) 0;
-    authenticationContext[OFFSET_AUTH_MECHANISM] = (short) 0;
-    Util.arrayFillNonAtomic(
-        authenticationContext, OFFSET_AUTH_CHALLENGE, LENGTH_CHALLENGE, (byte) 0);
+	PIVSecurityProvider.zeroise(authenticationContext, (short)0, LENGTH_AUTH_STATE);
   }
+
+  // TODO: Move and rename this to an appropriate place
+  static final byte CONST_TAG_TEMPLATE = (byte) 0x7C;
+  static final byte CONST_TAG_WITNESS = (byte) 0x80;
+  static final byte CONST_TAG_CHALLENGE = (byte) 0x81;
+  static final byte CONST_TAG_CHALLENGE_RESPONSE = (byte) 0x82;
+  static final byte CONST_TAG_EXPONENTIATION = (byte) 0x85;
+
 
   /**
    * The GENERAL AUTHENTICATE card command performs a cryptographic operation, such as an
@@ -927,12 +933,6 @@ public final class PIV {
    * @return The length of the return data
    */
   public short generalAuthenticate(byte[] buffer, short offset, short length) {
-
-    final byte CONST_TAG_TEMPLATE = (byte) 0x7C;
-    final byte CONST_TAG_WITNESS = (byte) 0x80;
-    final byte CONST_TAG_CHALLENGE = (byte) 0x81;
-    final byte CONST_TAG_CHALLENGE_RESPONSE = (byte) 0x82;
-    final byte CONST_TAG_EXPONENTIATION = (byte) 0x85;
 
     //
     // COMMAND CHAIN HANDLING
@@ -956,7 +956,9 @@ public final class PIV {
     //
 
     // PRE-CONDITION 1 - The key reference and mechanism must point to an existing key
-    PIVKeyObject key = cspPIV.selectKey(buffer[ISO7816.OFFSET_P2], buffer[ISO7816.OFFSET_P1]);
+    PIVKeyObject key = 
+		cspPIV.selectKey(buffer[ISO7816.OFFSET_P2], buffer[ISO7816.OFFSET_P1]);
+		
     if (key == null) {
       // If any key reference value is specified that is not supported by the card, the PIV Card
       // Application shall return the status word '6A 88'.
@@ -994,11 +996,15 @@ public final class PIV {
     //
     // STEP 1 - Traverse the TLV to determine what combination of elements exist
     //
-    short challengeOffset = 0, witnessOffset = 0, responseOffset = 0, exponentiationOffset = 0;
-    boolean challengeEmpty = false,
-        witnessEmpty = false,
-        responseEmpty = false,
-        exponentiationEmpty = false;
+    short challengeOffset = (short)0;
+    short witnessOffset = (short)0;
+    short responseOffset = (short)0;
+    short exponentiationOffset = (short)0;
+    
+    short challengeLength = (short)0;
+    short witnessLength = (short)0;
+    short responseLength = (short)0;
+    short exponentiationLength = (short)0;
 
     // Save the offset in the TLV object
     offset = tlvReader.getOffset();
@@ -1007,28 +1013,24 @@ public final class PIV {
     do {
       if (tlvReader.match(CONST_TAG_CHALLENGE)) {
         challengeOffset = tlvReader.getOffset();
-        challengeEmpty = tlvReader.isNull();
+        challengeLength = tlvReader.getLength();
       } else if (tlvReader.match(CONST_TAG_CHALLENGE_RESPONSE)) {
         responseOffset = tlvReader.getOffset();
-        responseEmpty = tlvReader.isNull();
+        responseLength = tlvReader.getLength();
       } else if (tlvReader.match(CONST_TAG_WITNESS)) {
         witnessOffset = tlvReader.getOffset();
-        witnessEmpty = tlvReader.isNull();
+        witnessLength = tlvReader.getLength();
       } else if (tlvReader.match(CONST_TAG_EXPONENTIATION)) {
         exponentiationOffset = tlvReader.getOffset();
-        exponentiationEmpty = tlvReader.isNull();
+        exponentiationLength = tlvReader.getLength();
       } else {
         // We have come across an unknown tag value
-        // TODO: We'll do nothing now until we know whether there are no edge cases where this is
-        // possible
+        // TODO: Ignore for now, check what other implementations do?
       }
     } while (tlvReader.moveNext());
 
     // Restore the offset in the TLV object
     tlvReader.setOffset(offset);
-
-    // Update our length to the block cipher length (Used for input validation in each case)
-    length = key.getBlockLength();
 
     //
     // STEP 2 - Process the appropriate GENERAL AUTHENTICATE case
@@ -1036,134 +1038,246 @@ public final class PIV {
 
     //
     // NOTES:
-    // There are 5 authentication cases that make up all of the GENERAL AUTHENTICATE functionality:
-    // CASE 1 - If a RESPONSE is present but empty and a CHALLENGE is present with data, it is an
-    // INTERNAL AUTHENTICATE
-    // CASE 2 - If a CHALLENGE is present but empty, it is an EXTERNAL AUTHENTICATE REQUEST
-    // CASE 3 - If a RESPONSE is present with data, it is an EXTERNAL AUTHENTICATE RESPONSE
-    // CASE 4 - If a WITNESS is present but empty, it is an MUTUAL AUTHENTICATE REQUEST
-    // CASE 5 - If a WITNESS is present with data, it is an MUTUAL AUTHENTICATE RESPONSE
+    // There are 7 authentication cases that make up all of the GENERAL AUTHENTICATE functionality:
+    
+    // CASE 1A - A CHALLENGE is present with data; AND
+	//           A RESPONSE is present but empty; AND
+	//           The specified key does NOT have the ROLE_SECURE_MESSAGING role, 
+	//           : It is an INTERNAL AUTHENTICATE
+	if ( challengeOffset != 0 && challengeLength != 0 && 
+		 responseOffset != 0 && responseLength == 0 &&
+		 !key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
+		return generalAuthenticate_CASE1A(key, challengeOffset, challengeLength);
+	} // Continued below
+
+    // CASE 1B - A CHALLENGE is present with data; AND
+	//           A RESPONSE is present but empty; AND
+	//           The specified key has the ROLE_SECURE_MESSAGING role.
+	//			 : It is a SECURE MESSAGING ESTABLISHMENT
+	if ( challengeOffset != 0 && challengeLength != 0 && 
+		 responseOffset != 0 && responseLength == 0 &&
+		 key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
+		return generalAuthenticate_CASE1B(key, challengeOffset, challengeLength);
+	} // Continued below
+	    
+    // CASE 2 - A CHALLENGE is present but empty
+	//			: It is an EXTERNAL AUTHENTICATE REQUEST
+    else if (challengeOffset != 0 && challengeLength == 0) {
+		return generalAuthenticate_CASE2(key, challengeOffset, challengeLength);
+    } // Continued below
+    
+    // CASE 3 - A RESPONSE is present with data
+    //			: It is an EXTERNAL AUTHENTICATE RESPONSE
+    else if (responseOffset != 0 && responseLength != 0) {
+    	return generalAuthenticateCase3(key, responseOffset, responseLength);
+    } // Continued below
+    
+    // CASE 4 - A WITNESS is present but empty
+    //			: It is an MUTUAL AUTHENTICATE REQUEST
+    else if (witnessOffset != 0 && witnessLength == 0) {
+    	return generalAuthenticateCase4(key, witnessOffset, witnessLength);    	
+    } // Continued below
+    
+    // CASE 5 - A WITNESS is present with data
+    //			: It is an MUTUAL AUTHENTICATE RESPONSE
+    else if (witnessOffset != 0 && (witnessLength != 0) && challengeOffset != 0 && (challengeLength != 0)) {
+    	return generalAuthenticateCase5(key, witnessOffset, witnessLength, challengeOffset, challengeLength);
+    }
     // If any other tag combination is present in the first element of data, it is an invalid case.
     //
+    else if (exponentiationOffset != 0 && (exponentiationLength != 0)) {
+		return generalAuthenticateCase6(key, exponentiationOffset, exponentiationLength);
+    } // Continued below
+
+    //
+    // INVALID CASE
+    //
+    else {
+      authenticateReset();
+      PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      return (short) 0; // Keep the compiler happy
+    }
+  }
+
+
+  private short generalAuthenticate_CASE1A(PIVKeyObject key, short challengeOffset, short challengeLength) {
 
     //
     // CASE 1 - INTERNAL AUTHENTICATE
-    // Authenticates the CARD to the CLIENT and is also used for KEY ESTABLISHMENT and
-    // DIGITAL SIGNATURES.
+    // Authenticates the CARD to the CLIENT and is also used for KEY ESTABLISHMENT and DIGITAL SIGNATURES.
     // Documented in SP800-73-4 Part 2 Appendix A.3
     //
     // > Client application sends a challenge to the PIV Card Application
-    if ((challengeOffset != 0 && !challengeEmpty) && (responseOffset != 0 && responseEmpty)) {
-      // Reset any other authentication intermediate state
-      authenticateReset();
-      // Validate that the key has the correct role for this operation
-      if (!key.hasRole(PIVKeyObject.ROLE_AUTH_INTERNAL)) {
-        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-        ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-      }
 
-      // Verify that the CHALLENGE tag length is the same as our block length
-      tlvReader.setOffset(challengeOffset);
-      if (length != tlvReader.getLength()) {
-        authenticateReset();
-        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-        ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      }
+	// Reset any other authentication intermediate state prior to any processing
+	authenticateReset();
+  	
+	// 
+	// PRE-CONDITIONS
+	//
+	
+	// PRE-CONDITION 1 - The key must have the correct role
+	if (!key.hasRole(PIVKeyObject.ROLE_AUTH_INTERNAL)) {
+		PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+		ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+	}
 
-      // Encrypt/Sign the CHALLENGE data
-      try {
-        if (key instanceof PIVKeyObjectPKI) {
-          length = cspPIV.sign(key, scratch, tlvReader.getDataOffset(), length, buffer, (short) 0);
-        } else {
-          length =
-              cspPIV.encrypt(key, scratch, tlvReader.getDataOffset(), length, buffer, (short) 0);
-        }
-      } finally {
-        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-      }
+	// PRE-CONDITION 2 - The CHALLENGE tag length must be the same as our block length
+	if (challengeLength != key.getBlockLength()) {
+		PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+	}
 
-      // Write out the response TLV, passing through the block length as an indicative maximum
-      tlvWriter.init(scratch, (short) 0, length, CONST_TAG_TEMPLATE);
+	// Move to our challenge data
+	tlvReader.setOffset(challengeOffset);
 
-      // Create the RESPONSE tag
-      tlvWriter.writeTag(CONST_TAG_CHALLENGE_RESPONSE);
-      tlvWriter.writeLength(length);
+	//
+	// IMPLEMENTATION NOTE:
+	//
+	// Since our input and output data is structured the same way, we make use of the same
+	// scratch buffer and perform the cipher in-place. This saves us from using the APDU
+	// buffer as a temporary working space and performing an extra copy.
+	//
 
-      // Write the response cryptogram
-      offset = Util.arrayCopyNonAtomic(buffer, (short) 0, scratch, tlvWriter.getOffset(), length);
-      tlvWriter.setOffset(offset); // Update the TLV offset value
+	// Encrypt/Sign the CHALLENGE data
+	short offset = tlvReader.getDataOffset();
 
-      // Finalise the TLV object and get the entire data object length
-      length = tlvWriter.finish();
+	// Write out the response TLV, passing through the challenge length as an indicative maximum
+	tlvWriter.init(scratch, (short) 0, challengeLength, CONST_TAG_TEMPLATE);
 
-      // Set up the outgoing command chain
-      chainBuffer.setOutgoing(scratch, (short) 0, length, true);
+	// Create the RESPONSE tag
+	tlvWriter.writeTag(CONST_TAG_CHALLENGE_RESPONSE);
+	tlvWriter.writeLength(challengeLength);
+	
+	try {
+		// TODO - Don't like this, fix it.. We should call in common way and keys or CSP knows what to do
+		if (key instanceof PIVKeyObjectPKI) {
+		  offset += cspPIV.sign(key, scratch, offset, challengeLength, scratch, offset);
+		} else {
+		  offset +=
+			  cspPIV.encrypt(key, scratch, offset, challengeLength, scratch, offset);
+		}
+	} catch (Exception e) {
+		authenticateReset();
+		
+		// Presume that we have a problem with the input data, instead of
+		// throwing 6F00.
+		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+	}
+	
+	// Finalise the TLV object and get the entire data object length
+	tlvWriter.setOffset(offset);
+	short length = tlvWriter.finish();
 
-      // Done, return the length of data we are sending
-      return length;
-    } // Continued below
+	// Set up the outgoing command chain
+	chainBuffer.setOutgoing(scratch, (short) 0, length, true);
 
-    //
-    // CASE 2 - EXTERNAL AUTHENTICATE REQUEST
-    // Authenticates the HOST to the CARD
-    //
+	// Done, return the length of data we are sending
+	return length;
+  }
 
-    // > Client application requests a challenge from the PIV Card Application.
-    else if (challengeOffset != 0 && challengeEmpty) {
+  private short generalAuthenticate_CASE1B(PIVKeyObject key, short challengeOffset, short challengeLength) {
 
-      // Reset any other authentication intermediate state
-      authenticateReset();
+      //
+      // CASE 1B - ESTABLISH SECURE MESSAGING
+      //
 
-      // Reset they key's security status
-      key.resetSecurityStatus();
+      // > TODO
 
-      // Validate that the key has the correct role for this operation
-      if (!key.hasRole(PIVKeyObject.ROLE_AUTH_EXTERNAL)) {
-        authenticateReset();
-        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-        ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-      }
+	  // Reset any other authentication intermediate state
+	  authenticateReset();
 
-      // Write out the response TLV, passing through the block length as an indicative maximum
-      tlvWriter.init(scratch, (short) 0, length, CONST_TAG_TEMPLATE);
+	  // Reset they key's security status
+	  key.resetSecurityStatus();
 
-      // Create the CHALLENGE tag
-      tlvWriter.writeTag(CONST_TAG_CHALLENGE);
-      tlvWriter.writeLength(length);
 
-      // Generate the CHALLENGE data and write it to the output buffer
-      offset = tlvWriter.getOffset();
-      cspPIV.generateRandom(scratch, offset, length);
 
-      // Store the encrypted CHALLENGE in our context, for easy comparison later
-      offset +=
-          cspPIV.encrypt(
-              key, scratch, offset, length, authenticationContext, OFFSET_AUTH_CHALLENGE);
+	  return (short)0;
+  }
 
-      tlvWriter.setOffset(offset); // Update the TLV offset value
+  private short generalAuthenticate_CASE2(PIVKeyObject key, short challengeOffset, short challengeLength) {
 
-      // Finalise the TLV object and get the entire data object length
-      length = tlvWriter.finish();
+      //
+      // CASE 2 - EXTERNAL AUTHENTICATE REQUEST
+      // Authenticates the HOST to the CARD
+      //
 
-      // Set our authentication state to EXTERNAL
-      authenticationContext[OFFSET_AUTH_STATE] = AUTH_STATE_EXTERNAL;
-      authenticationContext[OFFSET_AUTH_ID] = key.getId();
-      authenticationContext[OFFSET_AUTH_MECHANISM] = key.getMechanism();
+      // > Client application requests a challenge from the PIV Card Application.
 
-      // Set up the outgoing command chain
-      chainBuffer.setOutgoing(scratch, (short) 0, length, true);
+	  // Reset any other authentication intermediate state
+	  authenticateReset();
 
-      // Done, return the length of data we are sending
-      return length;
-    } // Continued below
+	  // Reset they key's security status
+	  key.resetSecurityStatus();
 
-    //
-    // CASE 3 - EXTERNAL AUTHENTICATE RESPONSE
-    //
 
-    // > Client application requests a challenge from the PIV Card Application.
-    else if (responseOffset != 0 && !responseEmpty) {
-      // This command is only valid if the authentication state is EXTERNAL
+	  // 
+	  // PRE-CONDITIONS
+	  //
+	
+	  // PRE-CONDITION 1 - The key must have the correct role
+	  if (!key.hasRole(PIVKeyObject.ROLE_AUTH_EXTERNAL)) {
+		authenticateReset();
+		PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+		ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+	  }
+
+	  short length = key.getBlockLength();
+	  
+	  // Write out the response TLV, passing through the block length as an indicative maximum
+	  tlvWriter.init(scratch, (short) 0, length, CONST_TAG_TEMPLATE);
+
+	  // Create the CHALLENGE tag
+	  tlvWriter.writeTag(CONST_TAG_CHALLENGE);
+	  tlvWriter.writeLength(key.getBlockLength());
+
+	  // Generate the CHALLENGE data and write it to the output buffer
+	  short offset = tlvWriter.getOffset();
+	  cspPIV.generateRandom(scratch, offset, length);		  
+  
+	  try {
+		// Generate and store the encrypted CHALLENGE in our context, so we can compare it without
+		// the key reference later.
+		offset += cspPIV.encrypt(
+			  key, scratch, offset, length, authenticationContext, OFFSET_AUTH_CHALLENGE);
+	  } catch (Exception e) {
+	     PIVSecurityProvider.zeroise(scratch, (short)0, LENGTH_SCRATCH);
+		 throw e;
+	  }
+
+	  // Update the TLV offset value
+	  tlvWriter.setOffset(offset); 
+
+	  // Finalise the TLV object and get the entire data object length
+	  length = tlvWriter.finish();
+
+	  // Set our authentication state to EXTERNAL
+	  authenticationContext[OFFSET_AUTH_STATE] = AUTH_STATE_EXTERNAL;
+	  authenticationContext[OFFSET_AUTH_ID] = key.getId();
+	  authenticationContext[OFFSET_AUTH_MECHANISM] = key.getMechanism();
+
+	  // Set up the outgoing command chain
+	  chainBuffer.setOutgoing(scratch, (short) 0, length, true);
+
+	  // Done, return the length of data we are sending
+	  return length;
+  }
+
+  private short generalAuthenticateCase3(PIVKeyObject key, short responseOffset, short responseLength) {
+
+	//
+	// CASE 3 - EXTERNAL AUTHENTICATE RESPONSE
+	//
+
+    // > Client application responds to a challenge from the PIV Card Application.
+
+
+	  // 
+	  // PRE-CONDITIONS
+	  //
+	
+	  // PRE-CONDITION 1 - This operation is only valid if the authentication state is EXTERNAL
       if (authenticationContext[OFFSET_AUTH_STATE] != AUTH_STATE_EXTERNAL) {
         // Invalid state for this command
         authenticateReset();
@@ -1171,7 +1285,7 @@ public final class PIV {
         ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
       }
 
-      // This command is only valid if the key and mechanism have not changed
+	  // PRE-CONDITION 2 - This operation is only valid if the key and mechanism have not changed
       if (authenticationContext[OFFSET_AUTH_ID] != key.getId()
           || authenticationContext[OFFSET_AUTH_MECHANISM] != key.getMechanism()) {
         // Invalid state for this command
@@ -1180,21 +1294,21 @@ public final class PIV {
         ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
       }
 
-      // Verify that the RESPONSE tag length is the same as our block length
-      tlvReader.setOffset(responseOffset);
-      if (length != tlvReader.getLength()) {
+      // PRE-CONDITION 3 - The RESPONSE tag length must be the same as our block length
+      if (responseLength != key.getBlockLength()) {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
       }
 
       // Compare the authentication statuses
+      tlvReader.setOffset(responseOffset);
       if (Util.arrayCompare(
               scratch,
               tlvReader.getDataOffset(),
               authenticationContext,
               OFFSET_AUTH_CHALLENGE,
-              length)
+              responseLength)
           != 0) {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1206,26 +1320,33 @@ public final class PIV {
 
       // Reset our authentication state
       authenticateReset();
-
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
 
-      // Done
+      // Done, no data to return
       return (short) 0;
-    } // Continued below
+  }
+
+  private short generalAuthenticateCase4(PIVKeyObject key, short witnessOffset, short witnessLength) {
+
 
     //
     // CASE 4 - MUTUAL AUTHENTICATE REQUEST
     //
 
     // > Client application requests a WITNESS from the PIV Card Application.
-    else if (witnessOffset != 0 && witnessEmpty) {
+
+
       // Reset any other authentication intermediate state
       authenticateReset();
 
       // Reset they key security condition
       key.resetSecurityStatus();
 
-      // Validate that the key has the correct role for this operation
+	  // 
+	  // PRE-CONDITIONS
+	  //
+	
+	  // PRE-CONDITION 1 - The key must have the correct role
       if (!key.hasRole(PIVKeyObject.ROLE_AUTH_EXTERNAL)) {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1236,6 +1357,7 @@ public final class PIV {
       //   data and encrypting it using the referenced key
 
       // Generate a block length worth of WITNESS data
+      short length = key.getBlockLength();
       cspPIV.generateRandom(authenticationContext, OFFSET_AUTH_CHALLENGE, length);
 
       // Write out the response TLV, passing through the block length as an indicative maximum
@@ -1246,7 +1368,7 @@ public final class PIV {
       tlvWriter.writeLength(length);
 
       // Encrypt the WITNESS data and write it to the output buffer
-      offset = tlvWriter.getOffset();
+      short offset = tlvWriter.getOffset();
       offset +=
           cspPIV.encrypt(
               key, authenticationContext, OFFSET_AUTH_CHALLENGE, length, scratch, offset);
@@ -1265,19 +1387,22 @@ public final class PIV {
 
       // Done, return the length of data we are sending
       return length;
-    }
+  }
+
+  private short generalAuthenticateCase5(PIVKeyObject key, short witnessOffset, short witnessLength, short challengeOffset, short challengeLength) {
 
     //
     // CASE 5 - MUTUAL AUTHENTICATE RESPONSE
     //
 
-    // > Client application returns the decrypted witness referencing the original algorithm key
-    // reference
-    else if (witnessOffset != 0 && !witnessEmpty && challengeOffset != 0 && !challengeEmpty) {
+	// 
+	// PRE-CONDITIONS
+	//
+
       // < PIV Card Application authenticates the client application by verifying the decrypted
       // witness.
 
-      // This command is only valid if the authentication state is EXTERNAL
+	  // PRE-CONDITION 1 - This operation is only valid if the authentication state is MUTUAL
       if (authenticationContext[OFFSET_AUTH_STATE] != AUTH_STATE_MUTUAL) {
         // Invalid state for this command
         authenticateReset();
@@ -1285,7 +1410,7 @@ public final class PIV {
         ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
       }
 
-      // This command is only valid if the key and mechanism have not changed
+      // PRE-CONDITION 2 - This operation is only valid if the key and mechanism have not changed
       if (authenticationContext[OFFSET_AUTH_ID] != key.getId()
           || authenticationContext[OFFSET_AUTH_MECHANISM] != key.getMechanism()) {
         // Invalid state for this command
@@ -1294,21 +1419,28 @@ public final class PIV {
         ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
       }
 
-      // Verify that the WITNESS tag length is the same as our block length
-      tlvReader.setOffset(witnessOffset);
-      if (length != tlvReader.getLength()) {
+      // PRE-CONDITION 3 - The WITNESS tag length must be the same as our block length
+      if (witnessLength != key.getBlockLength()) {
+        authenticateReset();
+        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+        ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      }
+
+      // PRE-CONDITION 4 - The CHALLENGE tag length must be equal to the witness length
+      if (challengeLength != witnessLength) {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
       }
 
       // Compare the authentication statuses
+      tlvReader.setOffset(witnessOffset);
       if (Util.arrayCompare(
               scratch,
               tlvReader.getDataOffset(),
               authenticationContext,
               OFFSET_AUTH_CHALLENGE,
-              length)
+              witnessLength)
           != 0) {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1317,32 +1449,27 @@ public final class PIV {
 
       // NOTE: The WITNESS is now verified, on to the CHALLENGE
 
-      // > Client application requests encryption of CHALLENGE data from the card using the same
-      // key.
-      // Verify that the CHALLENGE tag length is the same as our block length
+      // > Client application requests encryption of CHALLENGE data from the card using the 
+      // > same key.
       tlvReader.setOffset(challengeOffset);
-      if (key.getBlockLength() != tlvReader.getLength()) {
-        authenticateReset();
-        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-      }
-
-      // Encrypt the CHALLENGE data
-      length = cspPIV.encrypt(key, scratch, tlvReader.getDataOffset(), length, buffer, (short) 0);
 
       // Write out the response TLV, passing through the block length as an indicative maximum
-      tlvWriter.init(scratch, (short) 0, length, CONST_TAG_TEMPLATE);
+      tlvWriter.init(scratch, (short) 0, challengeLength, CONST_TAG_TEMPLATE);
 
       // Create the RESPONSE tag
       tlvWriter.writeTag(CONST_TAG_CHALLENGE_RESPONSE);
-      tlvWriter.writeLength(length);
+      tlvWriter.writeLength(challengeLength);
+      short offset = tlvWriter.getOffset();
 
-      // Write the response cryptogram
-      offset = Util.arrayCopyNonAtomic(buffer, (short) 0, scratch, tlvWriter.getOffset(), length);
-      tlvWriter.setOffset(offset); // Update the TLV offset value
+      // Encrypt the CHALLENGE data
+      offset += cspPIV.encrypt(key, scratch, tlvReader.getDataOffset(), challengeLength, 
+							    scratch, offset);
+
+	  // Update the TLV offset value		
+      tlvWriter.setOffset(offset); 
 
       // Finalise the TLV object and get the entire data object length
-      length = tlvWriter.finish();
+      short length = tlvWriter.finish();
 
       // Set this key's authentication state
       key.setSecurityStatus();
@@ -1356,40 +1483,40 @@ public final class PIV {
       // < PIV Card Application indicates successful authentication and sends back the encrypted
       // challenge.
       return length;
-    }
+  }
 
-    //
-    // CASE 6 - EXPONENTIATION AUTHENTICATE RESPONSE
-    //
+ private short generalAuthenticateCase6(PIVKeyObject key, short exponentiationOffset, short exponentiationLength) {
 
-    // > Client application returns the ECDH derived shared secret
-    else if (exponentiationOffset != 0 && !exponentiationEmpty) {
+		//
+		// CASE 6 - EXPONENTIATION AUTHENTICATE RESPONSE
+		//
+
+		// > Client application returns the ECDH derived shared secret
+
       // Reset any other authentication intermediate state
       authenticateReset();
-      // Validate that the key has the correct role for this operation
-      if (!key.hasRole(PIVKeyObject.ROLE_AUTH_INTERNAL)) {
+      
+	  // PRE-CONDITION 1 - The key must have the correct role
+      if (!key.hasRole(PIVKeyObject.ROLE_KEY_ESTABLISH)) {
         ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
       }
 
+      // PRE-CONDITION 2 - The EXPONENTIATION tag length must be the same as our block length
+      // TODO: Should put this into the PIVKeyObjectECC class      
+      short length = (short) (key.getBlockLength() * (short) 2 + (short) 1);
+      if (exponentiationLength != length) {
+        authenticateReset();
+        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+        ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      }
+	
+      // TODO: Get rid of this once we are correctly checking the new role/usage implementation
       if (!(key instanceof PIVKeyObjectECC)) {
         ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
       }
 
       // Verify that the EXPONENTIATION tag length is the same as a ECC public key
       tlvReader.setOffset(exponentiationOffset);
-
-      // TODO: Should put this into the PIVKeyObjectECC class
-      length = (short) (length * (short) 2 + (short) 1);
-
-      if (length != tlvReader.getLength()) {
-        authenticateReset();
-        PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-        ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      }
-
-      // Compute the shared secret
-      length =
-          cspPIV.keyAgreement(key, scratch, tlvReader.getDataOffset(), length, buffer, (short) 0);
 
       // Write out the response TLV, passing through the block length as an indicative maximum
       tlvWriter.init(scratch, (short) 0, length, CONST_TAG_TEMPLATE);
@@ -1398,9 +1525,13 @@ public final class PIV {
       tlvWriter.writeTag(CONST_TAG_CHALLENGE_RESPONSE);
       tlvWriter.writeLength(length);
 
-      // Write the response shared secret
-      offset = Util.arrayCopyNonAtomic(buffer, (short) 0, scratch, tlvWriter.getOffset(), length);
-      tlvWriter.setOffset(offset); // Update the TLV offset value
+      // Compute the shared secret
+      short offset = tlvWriter.getOffset();
+      offset +=
+          cspPIV.keyAgreement(key, scratch, tlvReader.getDataOffset(), length, scratch, offset);
+
+	  // Update the TLV offset value
+      tlvWriter.setOffset(offset); 
 
       // Finalise the TLV object and get the entire data object length
       length = tlvWriter.finish();
@@ -1411,18 +1542,7 @@ public final class PIV {
       // < PIV Card Application indicates successful authentication and sends back the encrypted
       // challenge.
       return length;
-    }
-
-    //
-    // INVALID CASE
-    //
-    else {
-      authenticateReset();
-      PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      return (short) 0; // Keep the compiler happy
-    }
-  }
+ }
 
   /**
    * The GENERATE ASYMMETRIC KEY PAIR card command initiates the generation and storing in the card
