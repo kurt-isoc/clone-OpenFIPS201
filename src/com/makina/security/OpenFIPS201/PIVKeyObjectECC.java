@@ -49,9 +49,11 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
 
     switch (getMechanism()) {
       case PIV.ID_ALG_ECC_P256:
+      case PIV.ID_ALG_ECC_CS2:
         params = ECParamsP256.Instance();
         break;
       case PIV.ID_ALG_ECC_P384:
+      case PIV.ID_ALG_ECC_CS7:
         params = ECParamsP384.Instance();
         break;
       default:

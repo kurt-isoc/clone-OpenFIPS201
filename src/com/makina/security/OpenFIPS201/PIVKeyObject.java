@@ -42,6 +42,13 @@ public abstract class PIVKeyObject extends PIVObject {
   // This key can be used for internal authentication
   public static final byte ROLE_AUTH_INTERNAL = (byte) 0x04;
 
+  // This key can be used for key establishment schemes
+  public static final byte ROLE_KEY_ESTABLISH = (byte) 0x08;
+
+  // This key can be used for secure messaging
+  public static final byte ROLE_SECURE_MESSAGING = (byte) 0x10;
+  
+
   //
   // Key Roles
   //
@@ -91,6 +98,8 @@ public abstract class PIVKeyObject extends PIVObject {
 
       case PIV.ID_ALG_ECC_P256:
       case PIV.ID_ALG_ECC_P384:
+      case PIV.ID_ALG_ECC_CS2:
+      case PIV.ID_ALG_ECC_CS7:
         key = new PIVKeyObjectECC(id, modeContact, modeContactless, mechanism, role);
         break;
 

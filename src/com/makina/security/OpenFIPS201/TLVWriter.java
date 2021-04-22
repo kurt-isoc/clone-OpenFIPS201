@@ -195,6 +195,17 @@ public final class TLVWriter {
     // Set the VALUE
     data[context[CONTEXT_OFFSET]++] = value;
   }
+  
+  
+  /**
+   * Progresses the write pointer forward when you have written to the buffer in some other way.
+   *
+   * @param length The number of elements to progress forward.
+   */
+  public void move(short length) {
+    // TODO: Make sure we won't go over our length boundary
+    context[CONTEXT_OFFSET] += length;
+  }
 
   /**
    * Adds an object with a short value to the TLV object
