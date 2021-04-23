@@ -317,7 +317,7 @@ public final class PIVSecurityProvider {
 
     // Done
     return valid;
-  }
+  }  
 
   /**
    * Generates a number of random bytes using the SECURE_RANDOM generator

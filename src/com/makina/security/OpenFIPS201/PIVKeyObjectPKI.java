@@ -87,6 +87,8 @@ public abstract class PIVKeyObjectPKI extends PIVKeyObject {
       // objects exist which happens in allocate which is called outside the
       // context of any constructor.
       // keyPair = new KeyPair(publicKey, privateKey);
+      
+      // TODO: BAD! Re-allocating every time, I thought we had fixed this?
       keyPair = new KeyPair(publicKey, privateKey);
       keyPair.genKeyPair();
 

@@ -1047,7 +1047,7 @@ public final class PIV {
 	if ( challengeOffset != 0 && challengeLength != 0 && 
 		 responseOffset != 0 && responseLength == 0 &&
 		 !key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
-		return generalAuthenticate_CASE1A(key, challengeOffset, challengeLength);
+		return generalAuthenticateCase1A(key, challengeOffset, challengeLength);
 	} // Continued below
 
     // CASE 1B - A CHALLENGE is present with data; AND
@@ -1057,13 +1057,13 @@ public final class PIV {
 	if ( challengeOffset != 0 && challengeLength != 0 && 
 		 responseOffset != 0 && responseLength == 0 &&
 		 key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
-		return generalAuthenticate_CASE1B(key, challengeOffset, challengeLength);
+		return generalAuthenticateCase1B(key, challengeOffset, challengeLength);
 	} // Continued below
 	    
     // CASE 2 - A CHALLENGE is present but empty
 	//			: It is an EXTERNAL AUTHENTICATE REQUEST
     else if (challengeOffset != 0 && challengeLength == 0) {
-		return generalAuthenticate_CASE2(key, challengeOffset, challengeLength);
+		return generalAuthenticateCase2(key, challengeOffset, challengeLength);
     } // Continued below
     
     // CASE 3 - A RESPONSE is present with data
@@ -1083,14 +1083,14 @@ public final class PIV {
     else if (witnessOffset != 0 && (witnessLength != 0) && challengeOffset != 0 && (challengeLength != 0)) {
     	return generalAuthenticateCase5(key, witnessOffset, witnessLength, challengeOffset, challengeLength);
     }
-    // If any other tag combination is present in the first element of data, it is an invalid case.
-    //
+
+    // CASE 6 - An EXPONENTIATION parameter is present with data
+    //			: It is a KEY ESTABLISHMENT SCHEME
     else if (exponentiationOffset != 0 && (exponentiationLength != 0)) {
 		return generalAuthenticateCase6(key, exponentiationOffset, exponentiationLength);
     } // Continued below
 
-    //
-    // INVALID CASE
+    // If any other tag combination is present in the first element of data, it is an invalid case.
     //
     else {
       authenticateReset();
@@ -1101,7 +1101,7 @@ public final class PIV {
   }
 
 
-  private short generalAuthenticate_CASE1A(PIVKeyObject key, short challengeOffset, short challengeLength) {
+  private short generalAuthenticateCase1A(PIVKeyObject key, short challengeOffset, short challengeLength) {
 
     //
     // CASE 1 - INTERNAL AUTHENTICATE
@@ -1155,8 +1155,8 @@ public final class PIV {
 		if (key instanceof PIVKeyObjectPKI) {
 		  offset += cspPIV.sign(key, scratch, offset, challengeLength, scratch, offset);
 		} else {
-		  offset +=
-			  cspPIV.encrypt(key, scratch, offset, challengeLength, scratch, offset);
+		  offset +=			  cspPIV.encrypt(key, scratch, offset, challengeLength, scratch, offset);
+
 		}
 	} catch (Exception e) {
 		authenticateReset();
@@ -1177,7 +1177,7 @@ public final class PIV {
 	return length;
   }
 
-  private short generalAuthenticate_CASE1B(PIVKeyObject key, short challengeOffset, short challengeLength) {
+  private short generalAuthenticateCase1B(PIVKeyObject key, short challengeOffset, short challengeLength) {
 
       //
       // CASE 1B - ESTABLISH SECURE MESSAGING
@@ -1191,12 +1191,72 @@ public final class PIV {
 	  // Reset they key's security status
 	  key.resetSecurityStatus();
 
+	  // 
+	  // PRE-CONDITIONS
+	  //
+	
+	  // PRE-CONDITION 1 - The key must have the correct role
+	  if (!key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
+		authenticateReset();
+		PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+		ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+	  }
 
+
+	//
+	// EXECUTION STEPS
+	// 
+
+	// C1 IDsICC = T8(SHA256(CICC)) 
+	// - IDsICC, the left-most 8 bytes of the SHA-256 hash of CICC, is used as an input for 
+	//   session key derivation. (Note that IDsICC is static, and so may be pre-computed off 
+	//   card.)
+	
+
+	// C2 CBICC = CBH & 'F0' 
+	// - Create the PIV Card Application’s control byte from client application’s control byte, 
+	//   indicating that persistent binding has not been used in this transaction, even if 
+	//   CBH indicates that the client application supports it. This may be done by setting CBICC 
+	//   to the value of CBH and then setting the 4 least significant bits of CBICC to 0.
+
+	// C3 Check that CBICC is 0x00 
+	// - Return an error ('6A 80') if CBICC is not 0x00.
+
+	// C4 Verify that QeH is a valid public key for the domain parameters of QsICC 
+	// - Perform partial public-key validation of QeH [SP800-56A, Section 5.6.2.3.3], 
+	//   where the domain parameters are those of QsICC. Also verify that P1 is '27' if the 
+	//   domain parameters of QsICC are those of Curve P-256 or that P1 is '2E' if the domain 
+	//   parameters of QsICC are those of Curve P-384. 
+	// - Return '6A 86' if P1 has the incorrect value. 
+	// - Return '6A 80' if publickey validation fails.
+
+	// C5 Z = ECC_CDH (dsICC, QeH) 
+	// - Compute the shared secret, Z, using the ECC CDH primitive [SP800-56A, Section 5.7.1.2].
+
+	// C6 Generate nonce NICC
+	// - Create a random nonce, where the length is as specified in Table 14. The nonce should be 
+	//   created using an approved random bit generator where the security strength supported by 
+	//   the random bit generator is at least as great as the bit length of the nonce being 
+	//   generated [SP800-56A, Section 5.3].
+
+	// C7 SKCFRM || SKMAC || SKENC || SKRMAC = KDF (Z, len, Otherinfo)
+	// - Compute the key confirmation key and the session keys. See Section 4.1.6.
+
+	// C8 Zeroize Z 
+	// - Destroy shared secret generated in Step C5.
+
+	// C9 AuthCryptogramICC = CMAC(SKCFRM, "KC_1_V" || IDsICC || IDsH || QeH) 
+	// - Compute the authentication cryptogram for key confirmation as described in Section 4.1.7.
+
+	// C10 Zeroize SKCFRM 
+	// - Destroy the key confirmation key derived in Step C7.
+
+	// C11 Return CBICC || NICC || AuthCryptogramICC || CICC
 
 	  return (short)0;
   }
 
-  private short generalAuthenticate_CASE2(PIVKeyObject key, short challengeOffset, short challengeLength) {
+  private short generalAuthenticateCase2(PIVKeyObject key, short challengeOffset, short challengeLength) {
 
       //
       // CASE 2 - EXTERNAL AUTHENTICATE REQUEST
