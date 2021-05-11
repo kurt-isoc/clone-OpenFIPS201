@@ -33,34 +33,64 @@ import javacard.framework.JCSystem;
 /** Provides functionality for PIV key objects */
 public abstract class PIVKeyObject extends PIVObject {
 
-  // No special roles are defined by this key
-  public static final byte ROLE_NONE = (byte) 0x00;
-  // This key can be used for administrative authentication
-  public static final byte ROLE_ADMIN = (byte) 0x01;
-  // This key can be used for external authentication
-  public static final byte ROLE_AUTH_EXTERNAL = (byte) 0x02;
-  // This key can be used for internal authentication
-  public static final byte ROLE_AUTH_INTERNAL = (byte) 0x04;
-
-  // This key can be used for key establishment schemes
-  public static final byte ROLE_KEY_ESTABLISH = (byte) 0x08;
-
-  // This key can be used for secure messaging
-  public static final byte ROLE_SECURE_MESSAGING = (byte) 0x10;
-  
-
   //
   // Key Roles
   //
   // The following key roles are defined as control bitmap flags, meaning multiple can be
   // set at once.
   //
+
+  // No special roles are defined by this key
+  public static final byte ROLE_NONE = (byte) 0x00;
+
+  // This key can be used for card/host authentication
+  // SYM: Supported for all types
+  // RSA: Not supported
+  // ECC: Not supported
+  //  SM: Not supported
+  public static final byte ROLE_AUTHENTICATE = (byte) 0x01;
+
+  // This key can be used for digital signature generation
+  // TODO: Decide if we implicitly support verification or separate it out.
+  // SYM: Not supported (Could be used for generic MAC generation?)
+  // RSA: Not supported 
+  // ECC: Not supported
+  //  SM: Not supported
+  public static final byte ROLE_SIGN = (byte) 0x04;
+
+  // This key can be used for key establishment schemes
+  // SYM: No supported
+  // RSA: RSA Key Management (decryption)
+  // ECC: ECDH
+  //  SM: Opacity-ZKM
+  public static final byte ROLE_KEY_ESTABLISH = (byte) 0x10;
+
+
+  //
+  // Key Attributes
+  //
+  public static final byte ATTR_NONE = (byte) 0x00;
+
+  // This key can be used for administrative authentication
+  public static final byte ATTR_ADMIN = (byte) 0x01;
+
   // This key can only be generated on-card (i.e. injection is blocked)
-  public static final byte ROLE_GENERATE_ONLY = (byte) 0x08;
+  public static final byte ATTR_GENERATE_ONLY = (byte)0x02;
+
+  // This key is limited to Mutual (host/card) authentication only). Disables EXTERNAL AUTH.
+  public static final byte ATTR_AUTH_MUTUAL = (byte)0x04;
+  
+  
+  //
+  // Header Format
+  //
+    
   protected static final short HEADER_MECHANISM = (short) 3;
   protected static final short HEADER_ROLE = (short) 4;
+  
   private static final short FLAGS_AUTHENTICATED = (short) 0;
   private static final short LENGTH_FLAGS = (short) 1;
+  
   // Transient declaration
   private final boolean[] securityFlags;
 

@@ -1046,7 +1046,7 @@ public final class PIV {
 	//           : It is an INTERNAL AUTHENTICATE
 	if ( challengeOffset != 0 && challengeLength != 0 && 
 		 responseOffset != 0 && responseLength == 0 &&
-		 !key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
+		 !key.hasRole(PIVKeyObject.ROLE_KEY_ESTABLISH)) {
 		return generalAuthenticateCase1A(key, challengeOffset, challengeLength);
 	} // Continued below
 
@@ -1056,7 +1056,7 @@ public final class PIV {
 	//			 : It is a SECURE MESSAGING ESTABLISHMENT
 	if ( challengeOffset != 0 && challengeLength != 0 && 
 		 responseOffset != 0 && responseLength == 0 &&
-		 key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
+		 key.hasRole(PIVKeyObject.ROLE_KEY_ESTABLISH)) {
 		return generalAuthenticateCase1B(key, challengeOffset, challengeLength);
 	} // Continued below
 	    
@@ -1196,7 +1196,7 @@ public final class PIV {
 	  //
 	
 	  // PRE-CONDITION 1 - The key must have the correct role
-	  if (!key.hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) {
+	  if (!key.hasRole(PIVKeyObject.ROLE_KEY_ESTABLISH)) {
 		authenticateReset();
 		PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
 		ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
@@ -1214,7 +1214,7 @@ public final class PIV {
 	
 
 	// C2 CBICC = CBH & 'F0' 
-	// - Create the PIV Card Application’s control byte from client application’s control byte, 
+	// - Create the PIV Card Applications control byte from client applications control byte, 
 	//   indicating that persistent binding has not been used in this transaction, even if 
 	//   CBH indicates that the client application supports it. This may be done by setting CBICC 
 	//   to the value of CBH and then setting the 4 least significant bits of CBICC to 0.
@@ -1277,7 +1277,7 @@ public final class PIV {
 	  //
 	
 	  // PRE-CONDITION 1 - The key must have the correct role
-	  if (!key.hasRole(PIVKeyObject.ROLE_AUTH_EXTERNAL)) {
+	  if (!key.hasRole(PIVKeyObject.ROLE_AUTHENTICATE)) {
 		authenticateReset();
 		PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
 		ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
@@ -1407,7 +1407,7 @@ public final class PIV {
 	  //
 	
 	  // PRE-CONDITION 1 - The key must have the correct role
-      if (!key.hasRole(PIVKeyObject.ROLE_AUTH_EXTERNAL)) {
+      if (!key.hasRole(PIVKeyObject.ROLE_AUTHENTICATE)) {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
         ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
