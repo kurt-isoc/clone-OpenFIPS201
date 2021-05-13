@@ -33,6 +33,8 @@ import javacard.security.RandomData;
 import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 
+@SuppressWarnings("unused")
+
 /**
  * Provides all security and cryptographic services required by PIV, including the storage of PIN
  * and KEY objects, as well as cryptographic primitives.
@@ -199,7 +201,7 @@ public final class PIVSecurityProvider {
    * @param role The key role / privileges control bitmap
    */
   public void createKey(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role) {
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
 
     // First, map the default mechanism code to TDEA 3KEY
     if (mechanism == PIV.ID_ALG_DEFAULT) {
@@ -207,7 +209,7 @@ public final class PIVSecurityProvider {
     }
 
     // Create our new key
-    PIVKeyObject key = PIVKeyObject.create(id, modeContact, modeContactless, mechanism, role);
+    PIVKeyObject key = PIVKeyObject.create(id, modeContact, modeContactless, mechanism, role, attributes);
 
     // Check if this is the first key added
     if (firstKey == null) {
@@ -215,6 +217,10 @@ public final class PIVSecurityProvider {
       return;
     }
 
+	// TODO: Change to insert at the head instead of the tail
+	//key.nextObject = firstKey;
+	//firstKey = key;
+	
     // Find the last key
     PIVObject last = firstKey;
     while (last.nextObject != null) {
@@ -245,8 +251,8 @@ public final class PIVSecurityProvider {
     // Iterate through the key store for ROLE_ADMIN keys
     if (!requiresSecureChannel) {
       PIVKeyObject key = firstKey;
-      while (key != null && !valid) {
-        if (key.hasRole(PIVKeyObject.ROLE_ADMIN) && key.getSecurityStatus()) {
+      while (key != null) {
+        if (key.hasAttribute(PIVKeyObject.ATTR_ADMIN) && key.getSecurityStatus()) {
           valid = true;
           break;
         }
@@ -386,7 +392,7 @@ public final class PIVSecurityProvider {
       byte[] outBuffer,
       short outOffset) {
 
-    if (!(key.isAsymmetric())) {
+	if (!(key instanceof PIVKeyObjectPKI)) {
       ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
     }
 
@@ -422,7 +428,7 @@ public final class PIVSecurityProvider {
       byte[] outBuffer,
       short outOffset) {
 
-    if (!(key.isAsymmetric())) {
+	if (!(key instanceof PIVKeyObjectPKI)) {
       ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
     }
 

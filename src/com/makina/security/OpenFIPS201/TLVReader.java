@@ -326,7 +326,7 @@ public final class TLVReader {
    * @param tag The tag to find
    * @return True if the current tag matches the supplied one
    */
-  private boolean match(short tag) {
+  public boolean match(short tag) {
     return (tag == Util.getShort((byte[]) dataPtr[0], context[CONTEXT_POSITION]));
   }
 

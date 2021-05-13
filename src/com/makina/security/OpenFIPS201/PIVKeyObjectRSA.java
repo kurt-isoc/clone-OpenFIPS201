@@ -26,8 +26,7 @@
 
 package com.makina.security.OpenFIPS201;
 
-import javacard.framework.ISO7816;
-import javacard.framework.ISOException;
+import javacard.framework.*;
 import javacard.security.*;
 import javacardx.crypto.Cipher;
 
@@ -35,18 +34,28 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
 
   // RSA Modulus Element
   private static final byte ELEMENT_RSA_N = (byte) 0x81;
+
   // RSA Public Exponent
   private static final byte ELEMENT_RSA_E = (byte) 0x82;
+
   // RSA Private Exponent
   private static final byte ELEMENT_RSA_D = (byte) 0x83;
 
-  // The list of elements that can be updated for an asymmetric key
+  // NOTE: Currently RSA CRT keys are not used, this is a placeholder
+  private final byte ELEMENT_RSA_P = (byte)0x84; // RSA Prime Exponent P
+  private final byte ELEMENT_RSA_Q = (byte)0x85; // RSA Prime Exponent Q
+  private final byte ELEMENT_RSA_DP = (byte)0x86; // RSA D mod P - 1
+  private final byte ELEMENT_RSA_DQ = (byte)0x87; // RSA D mod Q - 1
+  private final byte ELEMENT_RSA_PQ = (byte)0x88; // RSA Inverse Q
+
+  // The list of ASN.1 tags for the public components
   private static final byte CONST_TAG_MODULUS = (byte) 0x81; // RSA - The modulus
   private static final byte CONST_TAG_EXPONENT = (byte) 0x82; // RSA - The public exponent
 
   public PIVKeyObjectRSA(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role) {
-    super(id, modeContact, modeContactless, mechanism, role);
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
+    super(id, modeContact, modeContactless, mechanism, role, attributes);
+
   }
 
   /**
@@ -85,7 +94,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
         setPrivateExponent(buffer, offset, length);
         break;
 
-        // Clear Key
+      // Clear all key parts
       case ELEMENT_CLEAR:
         clear();
         break;
@@ -97,19 +106,39 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   }
 
   /** Clears and reallocates a private key. */
-  @Override
   protected void allocatePrivate() {
-    clearPrivate();
-    privateKey =
-        (PrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PRIVATE, getKeyLengthBits(), false);
+  	if (privateKey == null) {
+		privateKey =
+			(PrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PRIVATE, getKeyLengthBits(), false);      	  	
+  	}
   }
 
   /** Clears and if necessary reallocates a public key. */
+  private void allocatePublic() {
+  	if (publicKey == null) {
+		publicKey =
+			(PublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, getKeyLengthBits(), false);	  	
+  	}
+  }
+
+  /** @return true if the privateKey exists and is initialized. */
   @Override
-  protected void allocatePublic() {
-    clearPublic();
-    publicKey =
-        (PublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, getKeyLengthBits(), false);
+  public boolean isInitialised() {
+    return (privateKey != null && privateKey.isInitialized());
+  }
+
+  @Override
+  public void clear() {
+	  if (publicKey != null) {
+		  publicKey.clearKey();
+		  privateKey = null;
+	  }
+	  if (privateKey != null) {
+		  privateKey.clearKey();
+		  privateKey = null;
+	  }
+	  
+	  runGc();
   }
 
   /**
@@ -194,37 +223,56 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
     return 0;
   }
 
-  /**
-   * Marshals a public key
-   *
-   * @param pubKey the public key to marshal
-   * @param scratch the buffer to marshal the key to
-   * @param offset the location of the first byte of the marshaled key
-   * @return the length of the marshaled public key
-   */
   @Override
-  public short marshalPublic(PublicKey pubKey, byte[] scratch, short offset) {
-    pubKeyWriter.reset();
-    // Adding 12 to the key length to account for other overhead
-    pubKeyWriter.init(scratch, offset, (short) (getKeyLengthBytes() * 2 + 12), CONST_TAG_RESPONSE);
+  public short generate(byte[] scratch, short offset) {
+  	
+  	KeyPair keyPair;
+  	short length = 0;
+    try {    	
+      // Clear any key material
+      clear();
+      
+      // Allocate both parts (this only occurs if it hasn't already been allocated)
+      allocatePrivate();
+      allocatePublic();
+      
+      // We re-create every time generate() is called
+      keyPair = new KeyPair(publicKey, privateKey);
+	  keyPair.genKeyPair();
 
-    // Modulus
-    pubKeyWriter.writeTag(CONST_TAG_MODULUS);
-    pubKeyWriter.writeLength(getKeyLengthBytes());
+		TLVWriter writer = TLVWriter.getInstance();
 
-    // The modulus data must be written manually because of how RSAPublicKey works
-    offset = pubKeyWriter.getOffset();
-    offset += ((RSAPublicKey) pubKey).getModulus(scratch, offset);
-    pubKeyWriter.setOffset(offset); // Move the current position forward
+		// Adding 12 to the key length to account for other overhead
+		writer.init(scratch, offset, (short) (getKeyLengthBytes() * 2 + 12), CONST_TAG_RESPONSE);
 
-    // Exponent
-    pubKeyWriter.writeTag(CONST_TAG_EXPONENT);
-    pubKeyWriter.writeLength((short) 3); // Hack! Why can't we get the size from RSAPublicKey?
-    offset = pubKeyWriter.getOffset();
-    offset += ((RSAPublicKey) pubKey).getExponent(scratch, offset);
-    pubKeyWriter.setOffset(offset); // Move the current position forward
+		// Modulus
+		writer.writeTag(CONST_TAG_MODULUS);
+		writer.writeLength(getKeyLengthBytes());
 
-    return pubKeyWriter.finish();
+		// The modulus data must be written manually because of how RSAPublicKey works
+		offset = writer.getOffset();
+		offset += ((RSAPublicKey)publicKey).getModulus(scratch, offset);
+		writer.setOffset(offset); // Move the current position forward
+
+		// Exponent
+		writer.writeTag(CONST_TAG_EXPONENT);
+		writer.writeLength((short) 3); // Hack! Why can't we get the size from RSAPublicKey?
+		offset = writer.getOffset();
+		offset += ((RSAPublicKey) publicKey).getExponent(scratch, offset);
+		writer.setOffset(offset); // Move the current position forward
+
+		length = writer.finish();
+    } catch (CardRuntimeException cre) {
+      // At this point we are in a nondeterministic state so we will
+      // clear both the public and private keys if they exist
+      clear();
+      CardRuntimeException.throwIt(cre.getReason());
+    } finally {
+      // We new'd these objects so we make sure the memory is freed up once they are out of scope.
+      runGc();
+    }  	
+    
+    return length;
   }
 
   /** @return the block length of the key. */

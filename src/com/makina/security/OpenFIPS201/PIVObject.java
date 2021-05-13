@@ -106,6 +106,7 @@ public abstract class PIVObject {
 
   /** Requests object deletion if supported by the card. */
   protected void runGc() {
+	// Note that this will only execute on the next call the Applet.process();
     if (JCSystem.isObjectDeletionSupported()) {
       JCSystem.requestObjectDeletion();
     }

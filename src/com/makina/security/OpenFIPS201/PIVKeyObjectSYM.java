@@ -44,8 +44,8 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
   private SecretKey key;
 
   public PIVKeyObjectSYM(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role) {
-    super(id, modeContact, modeContactless, mechanism, role);
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
+    super(id, modeContact, modeContactless, mechanism, role, attributes);
   }
 
   @Override
@@ -138,11 +138,6 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
 
   public boolean isInitialised() {
     return (key != null && key.isInitialized());
-  }
-
-  @Override
-  public boolean isAsymmetric() {
-    return false;
   }
 
   @Override

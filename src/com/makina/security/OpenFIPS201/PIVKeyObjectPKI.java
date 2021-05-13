@@ -30,103 +30,17 @@ import javacard.framework.CardRuntimeException;
 import javacard.security.*;
 
 public abstract class PIVKeyObjectPKI extends PIVKeyObject {
-  protected static final byte ELEMENT_CLEAR = (byte) 0xFF;
+	
   protected static final short CONST_TAG_RESPONSE = (short) 0x7F49;
-  protected final TLVWriter pubKeyWriter;
 
-  protected PrivateKey privateKey;
-  protected PublicKey publicKey;
+  protected PrivateKey privateKey = null;
+  protected PublicKey publicKey = null;
 
   protected PIVKeyObjectPKI(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role) {
-    super(id, modeContact, modeContactless, mechanism, role);
-    pubKeyWriter = new TLVWriter();
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
+      super(id, modeContact, modeContactless, mechanism, role, attributes);
   }
-
-  /** @return true */
-  @Override
-  public boolean isAsymmetric() {
-    return true;
-  }
-
-  /**
-   * Clears the keypair elements if they exist and frees the ref to the private key.
-   *
-   * <p>Note: If the card does not support ObjectDeletion, repeatedly calling this method may
-   * exhaust NV RAM.
-   */
-  @Override
-  public void clear() {
-    clearPrivate();
-    clearPublic();
-  }
-
-  /** @return true if the privateKey exists and is initialized. */
-  @Override
-  public boolean isInitialised() {
-    return (privateKey != null && privateKey.isInitialized());
-  }
-
-  /**
-   * Generates a new random keypair.
-   *
-   * <p>Note: If the card does not support Object deletion, repeatedly calling this method may
-   * exhaust NV RAM.
-   *
-   * @throws Exception
-   */
-  public short generate(byte[] scratch, short offset) {
-    KeyPair keyPair;
-    short length = 0;
-    try {
-      clear();
-      allocatePrivate();
-      allocatePublic();
-      // Normally we only "new" objects in a constructor but in this case
-      // we cannot new the generator until the privateKey and publicKey
-      // objects exist which happens in allocate which is called outside the
-      // context of any constructor.
-      // keyPair = new KeyPair(publicKey, privateKey);
-      
-      // TODO: BAD! Re-allocating every time, I thought we had fixed this?
-      keyPair = new KeyPair(publicKey, privateKey);
-      keyPair.genKeyPair();
-
-      length = marshalPublic(keyPair.getPublic(), scratch, offset);
-    } catch (CardRuntimeException cre) {
-      // At this point we are in a nondeterministic state so we will
-      // clear both the public and private keys if they exist
-      clear();
-      CardRuntimeException.throwIt(cre.getReason());
-    } finally {
-      // We effectively new'd these objects so we will make sure the memory
-      // is freed up.
-      keyPair = null;
-      // Any existing public key is now invalid
-      clearPublic();
-      runGc();
-    }
-    return length;
-  }
-
-  /** Clears and dereferences the private key */
-  protected void clearPrivate() {
-    if (privateKey != null) {
-      privateKey.clearKey();
-      privateKey = null;
-      runGc();
-    }
-  }
-
-  /** Clears the public key */
-  protected void clearPublic() {
-    if (publicKey != null) {
-      publicKey.clearKey();
-      publicKey = null;
-      runGc();
-    }
-  }
-
+ 
   /**
    * Signs the passed precomputed hash
    *
@@ -165,19 +79,6 @@ public abstract class PIVKeyObjectPKI extends PIVKeyObject {
       byte[] outBuffer,
       short outOffset);
 
-  /**
-   * Marshals a public key
-   *
-   * @param pubKey the publicKey to marshal
-   * @param scratch the buffer to marshal the key to
-   * @param offset the location of the first byte of the marshalled key
-   * @return the length of the marshalled public key
-   */
-  protected abstract short marshalPublic(PublicKey pubKey, byte[] scratch, short offset);
+ public abstract short generate(byte[] scratch, short offset);
 
-  /** Clears and reallocates a private key. */
-  protected abstract void allocatePrivate();
-
-  /** Clears and if necessary reallocates a public key. */
-  protected abstract void allocatePublic();
 }

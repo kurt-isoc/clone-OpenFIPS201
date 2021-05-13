@@ -45,25 +45,34 @@ public abstract class PIVKeyObject extends PIVObject {
 
   // This key can be used for card/host authentication
   // SYM: Supported for all types
-  // RSA: Not supported
-  // ECC: Not supported
-  //  SM: Not supported
+  // RSA: Not supported (RSA authentication is just signing)
+  // ECC: Not supported (ECC authentication is just signing)
   public static final byte ROLE_AUTHENTICATE = (byte) 0x01;
 
   // This key can be used for digital signature generation
-  // TODO: Decide if we implicitly support verification or separate it out.
-  // SYM: Not supported (Could be used for generic MAC generation?)
+  // SYM: Not supported
   // RSA: Not supported 
   // ECC: Not supported
-  //  SM: Not supported
-  public static final byte ROLE_SIGN = (byte) 0x04;
+  public static final byte ROLE_SIGN = (byte) 0x02;
+
+  // Used for digital signature verification
+  // NOTE: Currently there is no PIV case for this, but reserve it in case we want the extension
+  // SYM: Not supported
+  // RSA: Not supported 
+  // ECC: Not supported
+  public static final byte ROLE_VERIFY = (byte) 0x04;
 
   // This key can be used for key establishment schemes
-  // SYM: No supported
+  // SYM: Not supported
   // RSA: RSA Key Management (decryption)
   // ECC: ECDH
-  //  SM: Opacity-ZKM
-  public static final byte ROLE_KEY_ESTABLISH = (byte) 0x10;
+  public static final byte ROLE_KEY_ESTABLISH = (byte) 0x08;
+
+  // This key can be used for key establishment schemes
+  // SYM: Not supported
+  // RSA: Not supported
+  // ECC: Opacity ZKM (Must have CVC component)
+  public static final byte ROLE_SECURE_MESSAGING = (byte) 0x10;
 
 
   //
@@ -78,8 +87,14 @@ public abstract class PIVKeyObject extends PIVObject {
   public static final byte ATTR_GENERATE_ONLY = (byte)0x02;
 
   // This key is limited to Mutual (host/card) authentication only). Disables EXTERNAL AUTH.
-  public static final byte ATTR_AUTH_MUTUAL = (byte)0x04;
+  public static final byte ATTR_MUTUAL_ONLY = (byte)0x04;
   
+  //
+  // Common Key Elements
+  //
+  
+  // Used by all key types to delete all key 
+  protected static final byte ELEMENT_CLEAR = (byte) 0xFF;
   
   //
   // Header Format
@@ -87,6 +102,7 @@ public abstract class PIVKeyObject extends PIVObject {
     
   protected static final short HEADER_MECHANISM = (short) 3;
   protected static final short HEADER_ROLE = (short) 4;
+  protected static final short HEADER_ATTRIBUTES = (short) 5;
   
   private static final short FLAGS_AUTHENTICATED = (short) 0;
   private static final short LENGTH_FLAGS = (short) 1;
@@ -95,12 +111,13 @@ public abstract class PIVKeyObject extends PIVObject {
   private final boolean[] securityFlags;
 
   protected PIVKeyObject(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role) {
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
 
     super(id, modeContact, modeContactless);
 
     header[HEADER_MECHANISM] = mechanism;
     header[HEADER_ROLE] = role;
+    header[HEADER_ATTRIBUTES] = attributes;
 
     securityFlags = JCSystem.makeTransientBooleanArray(LENGTH_FLAGS, JCSystem.CLEAR_ON_DESELECT);
 
@@ -108,7 +125,7 @@ public abstract class PIVKeyObject extends PIVObject {
   }
 
   public static PIVKeyObject create(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role) {
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
 
     PIVKeyObject key;
 
@@ -118,19 +135,19 @@ public abstract class PIVKeyObject extends PIVObject {
       case PIV.ID_ALG_AES_128:
       case PIV.ID_ALG_AES_192:
       case PIV.ID_ALG_AES_256:
-        key = new PIVKeyObjectSYM(id, modeContact, modeContactless, mechanism, role);
+        key = new PIVKeyObjectSYM(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 
       case PIV.ID_ALG_RSA_1024:
       case PIV.ID_ALG_RSA_2048:
-        key = new PIVKeyObjectRSA(id, modeContact, modeContactless, mechanism, role);
+        key = new PIVKeyObjectRSA(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 
       case PIV.ID_ALG_ECC_P256:
       case PIV.ID_ALG_ECC_P384:
       case PIV.ID_ALG_ECC_CS2:
       case PIV.ID_ALG_ECC_CS7:
-        key = new PIVKeyObjectECC(id, modeContact, modeContactless, mechanism, role);
+        key = new PIVKeyObjectECC(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 
       default:
@@ -152,8 +169,16 @@ public abstract class PIVKeyObject extends PIVObject {
     return header[HEADER_ROLE];
   }
 
+  public final byte getAttributes() {
+    return header[HEADER_ATTRIBUTES];
+  }
+
   public final boolean hasRole(byte role) {
     return ((header[HEADER_ROLE] & role) == role);
+  }
+
+  public final boolean hasAttribute(byte attribute) {
+    return ((header[HEADER_ROLE] & attribute) == attribute);
   }
 
   public final void resetSecurityStatus() {
@@ -178,7 +203,13 @@ public abstract class PIVKeyObject extends PIVObject {
 
   public abstract short getBlockLength();
 
-  public abstract boolean isAsymmetric();
-
   public abstract void updateElement(byte element, byte[] buffer, short offset, short length);
+  
+  /**
+   * Clears all key elements and marks the key as uninitialised.
+   *
+   * <p>Note: If the card does not support ObjectDeletion, repeatedly calling this method may
+   * exhaust NV RAM.
+   */
+  public abstract void clear();
 }
