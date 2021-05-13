@@ -124,7 +124,6 @@ public abstract class PIVKeyObject extends PIVObject {
     resetSecurityStatus();
   }
 
-  // TODO: Possible applet firewall issues with public static method. Review this
   public static PIVKeyObject create(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
 

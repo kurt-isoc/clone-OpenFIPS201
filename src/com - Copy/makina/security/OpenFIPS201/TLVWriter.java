@@ -57,32 +57,32 @@ public final class TLVWriter {
   private static final short CONTEXT_OFFSET_RESET = (short) 3;
   // The lock status of the TLV Writer
   private static final short CONTEXT_LOCKED = (short) 4;
-
+  
   private static final short LENGTH_CONTEXT = (short) 5;
-
-  private static final short STATUS_UNLOCKED = (short) 0;
-  private static final short STATUS_LOCKED = (short) 1;
-
+  
+  private static final short STATUS_UNLOCKED = (short)0;
+  private static final short STATUS_LOCKED = (short)1;
+  
   //
   // CONSTANTS
   //
   public final Object[] dataPtr;
   public final short[] context;
-
+ 
   private static TLVWriter instance;
-
+  
   private TLVWriter() {
     dataPtr = JCSystem.makeTransientObjectArray((short) 1, JCSystem.CLEAR_ON_DESELECT);
     context = JCSystem.makeTransientShortArray(LENGTH_CONTEXT, JCSystem.CLEAR_ON_DESELECT);
   }
-
+    
   public static TLVWriter getInstance() {
-
-    if (instance == null) {
-      instance = new TLVWriter();
-    }
-
-    return instance;
+  	
+	  if (instance == null) {
+		  instance = new TLVWriter();
+	  }
+	  
+	  return instance;
   }
 
   /**
@@ -97,11 +97,12 @@ public final class TLVWriter {
    */
   public void init(byte[] buffer, short offset, short contentLength, short tag) {
 
-    // RULE: This object must not have another unfinished operation
-    if (context[CONTEXT_LOCKED] == STATUS_LOCKED) {
-      ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
-    }
-    context[CONTEXT_LOCKED] = STATUS_LOCKED;
+	// RULE: This object must not have another unfinished operation
+  	if (context[CONTEXT_LOCKED] == STATUS_LOCKED) {
+	  	ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+  	}
+  	context[CONTEXT_LOCKED] = STATUS_LOCKED;
+
 
     if (contentLength < (short) 0) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
 
@@ -146,10 +147,10 @@ public final class TLVWriter {
    */
   public short finish() {
 
-    // RULE: This object must be have an outstanding operation
-    if (context[CONTEXT_LOCKED] != STATUS_LOCKED) {
-      ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
-    }
+	// RULE: This object must be have an outstanding operation
+  	if (context[CONTEXT_LOCKED] != STATUS_LOCKED) {
+	  	ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+  	}
 
     // Write the length to the data object tag field
     if (dataPtr[0] == null) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
@@ -227,7 +228,8 @@ public final class TLVWriter {
     // Set the VALUE
     data[context[CONTEXT_OFFSET]++] = value;
   }
-
+  
+  
   /**
    * Progresses the write pointer forward when you have written to the buffer in some other way.
    *

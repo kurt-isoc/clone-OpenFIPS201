@@ -26,10 +26,11 @@
 
 package com.makina.security.OpenFIPS201;
 
+import javacard.framework.CardRuntimeException;
 import javacard.security.*;
 
 public abstract class PIVKeyObjectPKI extends PIVKeyObject {
-
+	
   protected static final short CONST_TAG_RESPONSE = (short) 0x7F49;
 
   protected PrivateKey privateKey = null;
@@ -37,9 +38,9 @@ public abstract class PIVKeyObjectPKI extends PIVKeyObject {
 
   protected PIVKeyObjectPKI(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
-    super(id, modeContact, modeContactless, mechanism, role, attributes);
+      super(id, modeContact, modeContactless, mechanism, role, attributes);
   }
-
+ 
   /**
    * Signs the passed precomputed hash
    *
@@ -52,6 +53,7 @@ public abstract class PIVKeyObjectPKI extends PIVKeyObject {
    * @return the length of the signature
    */
   public abstract short sign(
+      Object csp,
       byte[] inBuffer,
       short inOffset,
       short inLength,
@@ -62,25 +64,21 @@ public abstract class PIVKeyObjectPKI extends PIVKeyObject {
    * Performs a key agreement
    *
    * @param csp the csp to do the key agreement.
-   * @param inBuffer the input to the key agreement operation
-   * @param inOffset the the location of first byte of the key agreement input
-   * @param inLength the length of the key agreement input
-   * @param outBuffer the key agreement output
-   * @param outOffset the location of the first byte of the key agreement output
-   * @return the length of the key agreement output
+   * @param inBuffer the public key of the other party
+   * @param inOffset the the location of first byte of the public key
+   * @param inLength the length of the public key
+   * @param outBuffer the computed secret
+   * @param outOffset the location of the first byte of the computed secret
+   * @return the length of the computed secret
    */
   public abstract short keyAgreement(
+      KeyAgreement csp,
       byte[] inBuffer,
       short inOffset,
       short inLength,
       byte[] outBuffer,
       short outOffset);
 
-  /**
-   * Generates a new assymetric key pair and returns the public component.
-   * 
-   * @param scratch the output buffer to hold the generated public component
-   * @param offset the starting position of the output buffer
-   */
-  public abstract short generate(byte[] outBuffer, short outOffset);
+ public abstract short generate(byte[] scratch, short offset);
+
 }

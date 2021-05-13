@@ -42,44 +42,20 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   private static final byte ELEMENT_RSA_D = (byte) 0x83;
 
   // NOTE: Currently RSA CRT keys are not used, this is a placeholder
-  //private final byte ELEMENT_RSA_P = (byte) 0x84; // RSA Prime Exponent P
-  //private final byte ELEMENT_RSA_Q = (byte) 0x85; // RSA Prime Exponent Q
-  //private final byte ELEMENT_RSA_DP = (byte) 0x86; // RSA D mod P - 1
-  //private final byte ELEMENT_RSA_DQ = (byte) 0x87; // RSA D mod Q - 1
-  //private final byte ELEMENT_RSA_PQ = (byte) 0x88; // RSA Inverse Q
+  private final byte ELEMENT_RSA_P = (byte)0x84; // RSA Prime Exponent P
+  private final byte ELEMENT_RSA_Q = (byte)0x85; // RSA Prime Exponent Q
+  private final byte ELEMENT_RSA_DP = (byte)0x86; // RSA D mod P - 1
+  private final byte ELEMENT_RSA_DQ = (byte)0x87; // RSA D mod Q - 1
+  private final byte ELEMENT_RSA_PQ = (byte)0x88; // RSA Inverse Q
 
   // The list of ASN.1 tags for the public components
   private static final byte CONST_TAG_MODULUS = (byte) 0x81; // RSA - The modulus
   private static final byte CONST_TAG_EXPONENT = (byte) 0x82; // RSA - The public exponent
 
-  // Cipher implementations (static so they are shared with all instances of PIVKeyObjectRSA)
-  private static Signature signer = null;
-  private static Cipher cipher = null;
-
   public PIVKeyObjectRSA(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
 
-    if (cipher == null) {
-    	try {
-			cipher = Cipher.getInstance(Cipher.ALG_RSA_NOPAD, false);	    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	cipher = null;
-    	}
-    }
-    
-    if (signer == null) {
-    	try {
-    		//
-    		// NOTE: We don't care about which RSA Signature mode we instantiate, because we use the 
-    		//       signPrecomputedHash() method anyway. Just choose the most likely to work.
-			signer = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1, false);	    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	signer = null;
-    	}
-    }
   }
 
   /**
@@ -118,7 +94,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
         setPrivateExponent(buffer, offset, length);
         break;
 
-        // Clear all key parts
+      // Clear all key parts
       case ELEMENT_CLEAR:
         clear();
         break;
@@ -131,18 +107,18 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
 
   /** Clears and reallocates a private key. */
   protected void allocatePrivate() {
-    if (privateKey == null) {
-      privateKey =
-          (PrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PRIVATE, getKeyLengthBits(), false);
-    }
+  	if (privateKey == null) {
+		privateKey =
+			(PrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PRIVATE, getKeyLengthBits(), false);      	  	
+  	}
   }
 
   /** Clears and if necessary reallocates a public key. */
   private void allocatePublic() {
-    if (publicKey == null) {
-      publicKey =
-          (PublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, getKeyLengthBits(), false);
-    }
+  	if (publicKey == null) {
+		publicKey =
+			(PublicKey) KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, getKeyLengthBits(), false);	  	
+  	}
   }
 
   /** @return true if the privateKey exists and is initialized. */
@@ -153,16 +129,16 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
 
   @Override
   public void clear() {
-    if (publicKey != null) {
-      publicKey.clearKey();
-      privateKey = null;
-    }
-    if (privateKey != null) {
-      privateKey.clearKey();
-      privateKey = null;
-    }
-
-    runGc();
+	  if (publicKey != null) {
+		  publicKey.clearKey();
+		  privateKey = null;
+	  }
+	  if (privateKey != null) {
+		  privateKey.clearKey();
+		  privateKey = null;
+	  }
+	  
+	  runGc();
   }
 
   /**
@@ -219,6 +195,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
    */
   @Override
   public short sign(
+      Object csp,
       byte[] inBuffer,
       short inOffset,
       short inLength,
@@ -228,65 +205,63 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
     }
 
-    signer.init(privateKey, Signature.MODE_SIGN);
-    return signer.signPreComputedHash(inBuffer, inOffset, inLength, outBuffer, outOffset);
+    ((Cipher) csp).init(privateKey, Cipher.MODE_ENCRYPT);
+    return ((Cipher) csp).doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
   }
 
-  /* Implements RSA Key Transport, which is just a private decrypt operation */
+  /** Not yet implemented for RSA keys. */
   @Override
   public short keyAgreement(
+      KeyAgreement csp,
       byte[] inBuffer,
       short inOffset,
       short inLength,
       byte[] outBuffer,
       short outOffset) {
-      	
-    if (inLength != getBlockLength()) {
-      ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-    }
-    cipher.init(privateKey, Cipher.MODE_DECRYPT);
-    return cipher.doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
+    // Not yet supported
+    ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    return 0;
   }
 
   @Override
-  public short generate(byte[] outBuffer, short outOffset) {
-
-    KeyPair keyPair;
-    short length = 0;
-    try {
+  public short generate(byte[] scratch, short offset) {
+  	
+  	KeyPair keyPair;
+  	short length = 0;
+    try {    	
       // Clear any key material
       clear();
-
+      
       // Allocate both parts (this only occurs if it hasn't already been allocated)
       allocatePrivate();
       allocatePublic();
-
+      
       // We re-create every time generate() is called
       keyPair = new KeyPair(publicKey, privateKey);
-      keyPair.genKeyPair();
+	  keyPair.genKeyPair();
 
-      TLVWriter writer = TLVWriter.getInstance();
+		TLVWriter writer = TLVWriter.getInstance();
 
-      // Adding 12 to the key length to account for other overhead
-      writer.init(outBuffer, outOffset, (short) (getKeyLengthBytes() * 2 + 12), CONST_TAG_RESPONSE);
+		// Adding 12 to the key length to account for other overhead
+		writer.init(scratch, offset, (short) (getKeyLengthBytes() * 2 + 12), CONST_TAG_RESPONSE);
 
-      // Modulus
-      writer.writeTag(CONST_TAG_MODULUS);
-      writer.writeLength(getKeyLengthBytes());
+		// Modulus
+		writer.writeTag(CONST_TAG_MODULUS);
+		writer.writeLength(getKeyLengthBytes());
 
-      // The modulus data must be written manually because of how RSAPublicKey works
-      outOffset = writer.getOffset();
-      outOffset += ((RSAPublicKey) publicKey).getModulus(outBuffer, outOffset);
-      writer.setOffset(outOffset); // Move the current position forward
+		// The modulus data must be written manually because of how RSAPublicKey works
+		offset = writer.getOffset();
+		offset += ((RSAPublicKey)publicKey).getModulus(scratch, offset);
+		writer.setOffset(offset); // Move the current position forward
 
-      // Exponent
-      writer.writeTag(CONST_TAG_EXPONENT);
-      writer.writeLength((short) 3); // Hack! Why can't we get the size from RSAPublicKey?
-      outOffset = writer.getOffset();
-      outOffset += ((RSAPublicKey) publicKey).getExponent(outBuffer, outOffset);
-      writer.setOffset(outOffset); // Move the current position forward
+		// Exponent
+		writer.writeTag(CONST_TAG_EXPONENT);
+		writer.writeLength((short) 3); // Hack! Why can't we get the size from RSAPublicKey?
+		offset = writer.getOffset();
+		offset += ((RSAPublicKey) publicKey).getExponent(scratch, offset);
+		writer.setOffset(offset); // Move the current position forward
 
-      length = writer.finish();
+		length = writer.finish();
     } catch (CardRuntimeException cre) {
       // At this point we are in a nondeterministic state so we will
       // clear both the public and private keys if they exist
@@ -295,8 +270,8 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
     } finally {
       // We new'd these objects so we make sure the memory is freed up once they are out of scope.
       runGc();
-    }
-
+    }  	
+    
     return length;
   }
 

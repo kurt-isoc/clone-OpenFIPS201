@@ -58,8 +58,16 @@ public final class PIVSecurityProvider {
   public final CVMPIN globalPIN; // 00 - Global PIN
 
   // Cryptographic Service Providers
+  private final Cipher cspAES;
+  private final Cipher cspTDEA;
+  private final Cipher cspRSASigner;
+  private final KeyAgreement cspECDH;
   private final RandomData cspRNG;
-  
+  private final Signature cspSHA1Signer;
+  private final Signature cspSHA256Signer;
+  private final Signature cspSHA384Signer;
+  private final Signature cspSHA512Signer;
+
   // Security Status Flags
   private final boolean[] securityFlags;
   // Key objects
@@ -68,9 +76,15 @@ public final class PIVSecurityProvider {
   public PIVSecurityProvider() {
 
     // Create our CSPs
+    cspAES = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+    cspTDEA = Cipher.getInstance(Cipher.ALG_DES_ECB_NOPAD, false);
+    cspECDH = KeyAgreement.getInstance(KeyAgreement.ALG_EC_SVDP_DH_PLAIN, false);
+    cspRSASigner = Cipher.getInstance(Cipher.ALG_RSA_NOPAD, false);
     cspRNG = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
-    /*
-*/
+    cspSHA1Signer = Signature.getInstance(Signature.ALG_ECDSA_SHA, false);
+    cspSHA256Signer = Signature.getInstance(Signature.ALG_ECDSA_SHA_256, false);
+    cspSHA384Signer = Signature.getInstance(Signature.ALG_ECDSA_SHA_384, false);
+    cspSHA512Signer = Signature.getInstance(Signature.ALG_ECDSA_SHA_512, false);
 
     // Create our security flags
     securityFlags = JCSystem.makeTransientBooleanArray(LENGTH_FLAGS, JCSystem.CLEAR_ON_DESELECT);
@@ -195,8 +209,7 @@ public final class PIVSecurityProvider {
     }
 
     // Create our new key
-    PIVKeyObject key =
-        PIVKeyObject.create(id, modeContact, modeContactless, mechanism, role, attributes);
+    PIVKeyObject key = PIVKeyObject.create(id, modeContact, modeContactless, mechanism, role, attributes);
 
     // Check if this is the first key added
     if (firstKey == null) {
@@ -204,10 +217,10 @@ public final class PIVSecurityProvider {
       return;
     }
 
-    // TODO: Change to insert at the head instead of the tail
-    // key.nextObject = firstKey;
-    // firstKey = key;
-
+	// TODO: Change to insert at the head instead of the tail
+	//key.nextObject = firstKey;
+	//firstKey = key;
+	
     // Find the last key
     PIVObject last = firstKey;
     while (last.nextObject != null) {
@@ -310,7 +323,7 @@ public final class PIVSecurityProvider {
 
     // Done
     return valid;
-  }
+  }  
 
   /**
    * Generates a number of random bytes using the SECURE_RANDOM generator
@@ -325,6 +338,102 @@ public final class PIVSecurityProvider {
     } else {
       cspRNG.generateData(buffer, offset, length);
     }
+  }
+
+  /**
+   * Performs a cryptographic encipherment operation using the supplied key
+   *
+   * @param key The key to use for encipherment
+   * @param inBuffer The buffer containing the plaintext
+   * @param inOffset The offset for inBuffer
+   * @param inLength The number of plaintext bytes to encipher
+   * @param outBuffer The buffer to write the ciphertext to
+   * @param outOffset The offset for outBuffer
+   * @return The length of the ciphertext bytes written
+   */
+  public short encrypt(
+      PIVKeyObject key,
+      byte[] inBuffer,
+      short inOffset,
+      short inLength,
+      byte[] outBuffer,
+      short outOffset) {
+
+    if (!(key instanceof PIVKeyObjectSYM)) {
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    }
+    Cipher cipher = null;
+
+    switch (key.getMechanism()) {
+      case PIV.ID_ALG_DEFAULT:
+      case PIV.ID_ALG_TDEA_3KEY:
+        cipher = cspTDEA;
+        break;
+
+      case PIV.ID_ALG_AES_128:
+      case PIV.ID_ALG_AES_192:
+      case PIV.ID_ALG_AES_256:
+        cipher = cspAES;
+        break;
+
+      default:
+        ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+    }
+
+    return ((PIVKeyObjectSYM) key)
+        .encrypt(cipher, inBuffer, inOffset, inLength, outBuffer, outOffset);
+  }
+
+  public short sign(
+      PIVKeyObject key,
+      byte[] inBuffer,
+      short inOffset,
+      short inLength,
+      byte[] outBuffer,
+      short outOffset) {
+
+	if (!(key instanceof PIVKeyObjectPKI)) {
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    }
+
+    Object signer = null;
+    if (key instanceof PIVKeyObjectRSA) {
+      signer = cspRSASigner;
+    } else {
+      switch (inLength) {
+        case MessageDigest.LENGTH_SHA:
+          signer = cspSHA1Signer;
+          break;
+        case MessageDigest.LENGTH_SHA_256:
+          signer = cspSHA256Signer;
+          break;
+        case MessageDigest.LENGTH_SHA_384:
+          signer = cspSHA384Signer;
+          break;
+        case MessageDigest.LENGTH_SHA_512:
+          signer = cspSHA512Signer;
+          break;
+        default:
+          ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      }
+    }
+    return ((PIVKeyObjectPKI) key).sign(signer, inBuffer, inOffset, inLength, outBuffer, outOffset);
+  }
+
+  public short keyAgreement(
+      PIVKeyObject key,
+      byte[] inBuffer,
+      short inOffset,
+      short inLength,
+      byte[] outBuffer,
+      short outOffset) {
+
+	if (!(key instanceof PIVKeyObjectPKI)) {
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    }
+
+    return ((PIVKeyObjectPKI) key)
+        .keyAgreement(cspECDH, inBuffer, inOffset, inLength, outBuffer, outOffset);
   }
 
   /**

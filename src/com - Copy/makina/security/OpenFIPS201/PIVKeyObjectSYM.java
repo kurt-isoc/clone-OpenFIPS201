@@ -208,11 +208,8 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
       short inLength,
       byte[] outBuffer,
       short outOffset) {
-    
     if (inLength != getBlockLength()) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    }
-    
     Cipher cipher;
     
     switch (getMechanism()) {
@@ -225,10 +222,6 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
 	case PIV.ID_ALG_AES_256:
 		cipher = cspAES;
 		break;
-		
-	default:
-		ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
-		return (short)0; // Keep compiler happy
     }
     
     cipher.init(key, Cipher.MODE_ENCRYPT);
@@ -241,29 +234,6 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
       short inLength,
       byte[] outBuffer,
       short outOffset) {
-
-    if (inLength != getBlockLength()) {
-      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    }
-
-    Cipher cipher;
-
-    switch (getMechanism()) {
-	case PIV.ID_ALG_TDEA_3KEY:
-		cipher = cspTDEA;
-					break;
-		
-	case PIV.ID_ALG_AES_128:
-	case PIV.ID_ALG_AES_192:
-	case PIV.ID_ALG_AES_256:
-		cipher = cspAES;
-		break;
-		
-	default:
-		ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
-		return (short)0; // Keep compiler happy
-    }
-    
     cipher.init(key, Cipher.MODE_DECRYPT);
     return cipher.doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
   }
