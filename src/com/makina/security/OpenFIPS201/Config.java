@@ -24,7 +24,7 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.OpenFIPS201;
+package com.makina.security.openfips201;
 
 /**
  * Defines all configurable elements of the PIV applet in one place. This allows customisation of

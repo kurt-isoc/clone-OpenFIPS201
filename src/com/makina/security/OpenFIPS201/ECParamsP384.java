@@ -24,7 +24,7 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.OpenFIPS201;
+package com.makina.security.openfips201;
 
 /**
  * Curve P-384 (aka SECP384R1) domain parameters from NIST SP 800-186

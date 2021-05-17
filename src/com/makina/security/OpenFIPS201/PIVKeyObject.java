@@ -24,7 +24,7 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.OpenFIPS201;
+package com.makina.security.openfips201;
 
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
@@ -51,8 +51,8 @@ public abstract class PIVKeyObject extends PIVObject {
 
   // This key can be used for digital signature generation
   // SYM: Not supported
-  // RSA: Not supported 
-  // ECC: Not supported
+  // RSA: RSA Digital Signature
+  // ECC: ECDSA
   public static final byte ROLE_SIGN = (byte) 0x02;
 
   // Used for digital signature verification

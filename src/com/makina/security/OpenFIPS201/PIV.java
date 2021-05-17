@@ -24,7 +24,7 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.OpenFIPS201;
+package com.makina.security.openfips201;
 
 import javacard.framework.*;
 
@@ -1053,12 +1053,10 @@ public final class PIV {
     // Pre-conditions:
     // 1) A CHALLENGE is present with data; AND
     // 2) A RESPONSE is present but empty; AND
-    // 3) If the key type is ECC and the key has the KEY_ESTABLISH role, it is Variant A; OR
-    // 5) If the key type is RSA or ECC and the key has the SIGNATURE role, it is Variant B; OR
-    // 3) If the key type is TDEA or AES and the key must has the AUTHENTICATE role, it is Variant
-    // C; AND
-    // 4) If the key has the AUTHENTICATE role, the MUTUAL_ONLY attribute must NOT be set (Variant
-    // A);
+    // 3) If the key type is ECC and the key has the SECURE_MESSAGE role, it is Variant A
+    // 4) If the key type is RSA or ECC and the key has the SIGNATURE role, it is Variant B
+    // 5) If the key type is RSA and the key has the KEY_ESTABLISH role, it is Variant C
+    // 6) If the key type is TDEA or AES and the key has the AUTHENTICATE role, it is Variant D
     if (challengeOffset != 0
         && challengeLength != 0
         && responseOffset != 0

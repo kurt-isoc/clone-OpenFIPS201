@@ -24,44 +24,34 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.openfips201;
+package com.makina.security.OpenFIPS201 ;
 
-/*
- * ECC Domain Parameters
- */
-abstract class ECParams {
-  // cofactor
-  protected static final short h = 0x01;
+import javacard.framework.*;
 
-  /*
-   * Gets the curve polynomial a element
-   */
-  protected abstract byte[] getA();
+public class SecureMessageCVC  
+{
+	// Mandatory fields
+	// As per SP 800 73-4 4.1.5 (Table 15)
+	public static final short TAG_CVC = (short)0x7F21;
+	public static final short TAG_CPI = (short)0x5F29;
+	public static final short TAG_IIN = (short)0x42;
+	public static final short TAG_SI = (short)0x5F20;
+	public static final short TAG_CHPK = (short)0x7F49;
+	public static final short TAG_CHPK_ALG = (short)0x06;
+	public static final short TAG_CHPK_KEY = (short)0x86;
+	public static final short TAG_ROLE = (short)0x5F4C;
+	public static final short TAG_DSIG = (short)0x5F37;
 
-  /*
-   * Gets the curve polynomial b element
-   */
-  protected abstract byte[] getB();
+	
+	public SecureMessageCVC() {
+		
+	}
+	
+	public void parse(byte[] buffer, short offset) {
+		
+		
+		
+	}
+	
 
-  /*
-   * Gets the curve base point
-   */
-  protected abstract byte[] getG();
-
-  /*
-   * Gets the field definition
-   */
-  protected abstract byte[] getP();
-
-  /*
-   * Gets the order n of G
-   */
-  protected abstract byte[] getN();
-
-  /*
-   * Gets the cofactor
-   */
-  protected short getH() {
-    return h;
-  }
 }

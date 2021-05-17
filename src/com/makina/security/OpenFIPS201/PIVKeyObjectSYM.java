@@ -1,6 +1,6 @@
 /******************************************************************************
  * MIT License
- *
+ *
  * Project: OpenFIPS201
  * Copyright: (c) 2017 Commonwealth of Australia
  * Author: Kim O'Sullivan - Makina (kim@makina.com.au)
@@ -24,7 +24,7 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.OpenFIPS201;
+package com.makina.security.openfips201;
 
 import javacard.framework.*;
 import javacard.security.*;
@@ -45,8 +45,13 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
 
   public PIVKeyObjectSYM(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
-    super(id, modeContact, modeContactless, mechanism, role, attributes);
-    
+    super(id, modeContact, modeContactless, mechanism, role, attributes);    
+  }
+
+  /*
+   * Allows safe allocation of cryptographic service providers at applet instantiation
+   */
+  public static void createProviders() {
     if (cspTDEA == null) {
     	try {
 			cspTDEA = Cipher.getInstance(Cipher.ALG_DES_ECB_NOPAD, false);	    	
@@ -64,7 +69,7 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
     	}
     }
   }
-
+  
   @Override
   public void updateElement(byte element, byte[] buffer, short offset, short length) {
     short keyLengthBytes = getKeyLengthBytes();

@@ -24,7 +24,7 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.OpenFIPS201;
+package com.makina.security.openfips201;
 
 import javacard.framework.*;
 import javacard.security.*;
@@ -59,7 +59,12 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   public PIVKeyObjectRSA(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
-
+  }
+  
+  /*
+   * Allows safe allocation of cryptographic service providers at applet instantiation
+   */
+  public static void createProviders() {
     if (cipher == null) {
     	try {
 			cipher = Cipher.getInstance(Cipher.ALG_RSA_NOPAD, false);	    	
@@ -79,7 +84,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
 	    	// We couldn't create this algorithm, the card may not support it!
 	    	signer = null;
     	}
-    }
+    }	  
   }
 
   /**

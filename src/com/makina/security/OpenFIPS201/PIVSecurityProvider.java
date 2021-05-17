@@ -24,7 +24,7 @@
  * SOFTWARE.
  ******************************************************************************/
 
-package com.makina.security.OpenFIPS201;
+package com.makina.security.openfips201;
 
 import javacard.framework.*;
 import javacard.security.KeyAgreement;
@@ -67,10 +67,11 @@ public final class PIVSecurityProvider {
 
   public PIVSecurityProvider() {
 
-    // Create our CSPs
+    // Create all CSP's, including the shared key instances
     cspRNG = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
-    /*
-*/
+    PIVKeyObjectSYM.createProviders();
+    PIVKeyObjectECC.createProviders();
+    PIVKeyObjectRSA.createProviders();    
 
     // Create our security flags
     securityFlags = JCSystem.makeTransientBooleanArray(LENGTH_FLAGS, JCSystem.CLEAR_ON_DESELECT);
