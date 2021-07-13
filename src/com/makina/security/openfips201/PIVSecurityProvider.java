@@ -26,12 +26,12 @@
 
 package com.makina.security.openfips201;
 
-import javacard.framework.*;
-import javacard.security.KeyAgreement;
-import javacard.security.MessageDigest;
+import javacard.framework.Util;
+import javacard.framework.PIN;
+import javacard.framework.OwnerPIN;
+import javacard.framework.JCSystem;
+
 import javacard.security.RandomData;
-import javacard.security.Signature;
-import javacardx.crypto.Cipher;
 
 @SuppressWarnings("unused")
 
@@ -59,7 +59,7 @@ public final class PIVSecurityProvider {
 
   // Cryptographic Service Providers
   private final RandomData cspRNG;
-  
+
   // Security Status Flags
   private final boolean[] securityFlags;
   // Key objects
@@ -71,7 +71,7 @@ public final class PIVSecurityProvider {
     cspRNG = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
     PIVKeyObjectSYM.createProviders();
     PIVKeyObjectECC.createProviders();
-    PIVKeyObjectRSA.createProviders();    
+    PIVKeyObjectRSA.createProviders();
 
     // Create our security flags
     securityFlags = JCSystem.makeTransientBooleanArray(LENGTH_FLAGS, JCSystem.CLEAR_ON_DESELECT);

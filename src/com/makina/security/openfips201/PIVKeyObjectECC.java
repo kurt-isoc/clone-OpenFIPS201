@@ -26,9 +26,22 @@
 
 package com.makina.security.openfips201;
 
-import javacard.framework.*;
-import javacard.security.*;
-import javacardx.crypto.*;
+import javacard.framework.ISO7816;
+import javacard.framework.ISOException;
+import javacard.framework.CardRuntimeException;
+
+import javacard.security.PublicKey;
+import javacard.security.PrivateKey;
+import javacard.security.ECPrivateKey;
+import javacard.security.ECPublicKey;
+import javacard.security.KeyAgreement;
+import javacard.security.Signature;
+import javacard.security.MessageDigest;
+import javacard.security.KeyBuilder;
+import javacard.security.KeyPair;
+import javacard.security.CryptoException;
+
+import javacardx.crypto.Cipher;
 
 /** Provides functionality for ECC PIV key objects */
 public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
@@ -40,15 +53,8 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   // The ECC private key element tag
   private static final byte ELEMENT_ECC_SECRET = (byte) 0x89;
 
-  // The Secure Messaging CVC
-  private static final byte ELEMENT_CVC = (byte) 0x8A;
-
   private final ECParams params;
   private final short marshaledPubKeyLen;
-
-  // The Secure Messaging CVC object (not used for standard ECC)
-  private byte[] cvc = null;
-  private byte[] cvcHash = null;
 
   // Cipher implementations (static so they are shared with all instances of PIVKeyObjectECC)
   private static KeyAgreement keyAgreement = null;
@@ -59,11 +65,11 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   private static MessageDigest digestSHA256 = null;
   private static MessageDigest digestSHA384 = null;
   private static Cipher cipherAES = null;
-  
+
   public PIVKeyObjectECC(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
-        
+
     switch (getMechanism()) {
       case PIV.ID_ALG_ECC_P256:
       case PIV.ID_ALG_ECC_CS2:
@@ -81,87 +87,81 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
     // Uncompressed ECC public keys are marshaled as the concatenation of:
     // CONST_POINT_UNCOMPRESSED | X | Y
     // where the length of the X and Y coordinates is the byte length of the key.
+    // TODO: We can use 2 consts and decide which to compare against based on the mechanism!
     marshaledPubKeyLen = (short) (getKeyLengthBytes() * 2 + 1);
   }
 
   /*
    * Allows safe allocation of cryptographic service providers at applet instantiation
    */
+  @SuppressWarnings("squid:S3776") // Cyclomatic complexity warning because of the try/catches.
   public static void createProviders() {
-  	
+
     if (keyAgreement == null) {
-    	try {
-			keyAgreement = KeyAgreement.getInstance(KeyAgreement.ALG_EC_SVDP_DH_PLAIN, false);
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	keyAgreement = null;
-    	}
+      try {
+        keyAgreement = KeyAgreement.getInstance(KeyAgreement.ALG_EC_SVDP_DH_PLAIN, false);
+      } catch (CryptoException ex) {
+        keyAgreement = null;
+      }
     }
 
     if (signerSHA1 == null) {
-    	try {
-			signerSHA1 = Signature.getInstance(Signature.ALG_ECDSA_SHA, false);    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	signerSHA1 = null;
-    	}
+      try {
+        signerSHA1 = Signature.getInstance(Signature.ALG_ECDSA_SHA, false);
+      } catch (CryptoException ex) {
+        signerSHA1 = null;
+      }
     }
 
     if (signerSHA256 == null) {
-    	try {
-			signerSHA256 = Signature.getInstance(Signature.ALG_ECDSA_SHA_256, false);    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	signerSHA256 = null;
-    	}
+      try {
+        signerSHA256 = Signature.getInstance(Signature.ALG_ECDSA_SHA_256, false);
+      } catch (CryptoException ex) {
+        signerSHA256 = null;
+      }
     }
 
     if (signerSHA384 == null) {
-    	try {
-			signerSHA384 = Signature.getInstance(Signature.ALG_ECDSA_SHA_384, false);    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	signerSHA384 = null;
-    	}
+      try {
+        signerSHA384 = Signature.getInstance(Signature.ALG_ECDSA_SHA_384, false);
+      } catch (CryptoException ex) {
+        signerSHA384 = null;
+      }
     }
 
     if (signerSHA512 == null) {
-    	try {
-			signerSHA512 = Signature.getInstance(Signature.ALG_ECDSA_SHA_512, false);    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	signerSHA512 = null;
-    	}
+      try {
+        signerSHA512 = Signature.getInstance(Signature.ALG_ECDSA_SHA_512, false);
+      } catch (CryptoException ex) {
+        signerSHA512 = null;
+      }
     }
 
     if (digestSHA256 == null) {
-    	try {
-			digestSHA256 = MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false); 	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	digestSHA256 = null;
-    	}
+      try {
+        digestSHA256 = MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false);
+      } catch (CryptoException ex) {
+        digestSHA256 = null;
+      }
     }
 
     if (digestSHA384 == null) {
-    	try {
-			digestSHA384 = MessageDigest.getInstance(MessageDigest.ALG_SHA_384, false); 	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	digestSHA384 = null;
-    	}
+      try {
+        digestSHA384 = MessageDigest.getInstance(MessageDigest.ALG_SHA_384, false);
+      } catch (CryptoException ex) {
+        digestSHA384 = null;
+      }
     }
 
     if (cipherAES == null) {
-    	try {
-			cipherAES = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	cipherAES = null;
-    	}
-    }  	
+      try {
+        cipherAES = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
+      } catch (CryptoException ex) {
+        cipherAES = null;
+      }
+    }
   }
-  
+
   /**
    * Updates the elements of the keypair with new values.
    *
@@ -183,15 +183,19 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   @Override
   public void updateElement(byte element, byte[] buffer, short offset, short length) {
 
+
     switch (element) {
+    	
       case ELEMENT_ECC_POINT:
         if (length != marshaledPubKeyLen) {
           ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    	  return; // Keep static analyser happy
         }
 
         // Only uncompressed points are supported
         if (buffer[offset] != CONST_POINT_UNCOMPRESSED) {
           ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    	  return; // Keep static analyser happy
         }
 
         allocatePublic();
@@ -202,16 +206,12 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
       case ELEMENT_ECC_SECRET:
         if (length != getKeyLengthBytes()) {
           ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+		  return; // Keep static analyser happy
         }
 
         allocatePrivate();
 
         ((ECPrivateKey) privateKey).setS(buffer, offset, length);
-        break;
-
-        // Clear all key parts
-      case ELEMENT_CVC:
-      	setCVC(buffer, offset, length);
         break;
 
         // Clear all key parts
@@ -223,41 +223,6 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
         break;
     }
-  }
-
-  private void setCVC(byte[] buffer, short offset, short length) {
-  	
-	// Re-allocate every call as we can't be sure of the length of the new object        
-	if (cvc != null) {
-	  cvc = null;
-	  cvcHash = null;
-	  runGc();
-	}
-
-	// Allocate the new object and copy across
-	cvc = new byte[length];
-	Util.arrayCopyNonAtomic(buffer, offset, cvc, (short) 0, length);
-
-	// Generate the hash
-    switch (getMechanism()) {
-      case PIV.ID_ALG_ECC_P256:
-      case PIV.ID_ALG_ECC_CS2:
-		cvcHash = new byte[MessageDigest.LENGTH_SHA_256];		
-		digestSHA256.reset();
-		digestSHA256.doFinal(buffer, offset, length, cvcHash, (short)0);
-        break;
-      case PIV.ID_ALG_ECC_P384:
-      case PIV.ID_ALG_ECC_CS7:
-		cvcHash = new byte[MessageDigest.LENGTH_SHA_384];
-		digestSHA384.reset();
-		digestSHA384.doFinal(buffer, offset, length, cvcHash, (short)0);
-        break;
-
-      default:
-        ISOException.throwIt(ISO7816.SW_DATA_INVALID);
-        return; // Keep the compiler happy
-    }
-	
   }
 
   /** Clears and reallocates a private key. */
@@ -367,7 +332,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
       case PIV.ID_ALG_ECC_CS2:
       case PIV.ID_ALG_ECC_CS7:
         // At a minimum we need the private key AND the Card Verifiable Certificate object
-        return (privateKey != null && privateKey.isInitialized() && cvc != null);
+        return (privateKey != null && privateKey.isInitialized());
 
       default:
         return false; // Satisfy the compiler
@@ -383,10 +348,6 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
     if (privateKey != null) {
       privateKey.clearKey();
       privateKey = null;
-    }
-    if (cvc != null) {
-      cvc = null;
-      runGc();
     }
   }
 
@@ -423,101 +384,6 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
     ((ECPublicKey) publicKey).setK(params.getH());
   }
 
-  @Override
-  public short establishSecureMessaging(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset) {
-
-    //
-    // EXECUTION STEPS
-    //
-
-    // C1 IDsICC = T8(SHA256(CICC))
-    // - IDsICC, the left-most 8 bytes of the SHA-256 hash of CICC, is used as an input for
-    //   session key derivation. (Note that IDsICC is static, and so may be pre-computed off
-    //   card.)
-        
-    // C2 CBICC = CBH & 'F0'
-    // - Create the PIV Card Applications control byte from client applications control byte,
-    //   indicating that persistent binding has not been used in this transaction, even if
-    //   CBH indicates that the client application supports it. This may be done by setting CBICC
-    //   to the value of CBH and then setting the 4 least significant bits of CBICC to 0.
-    byte cbICC = (byte)(inBuffer[inOffset] & 0xF0);
-    inOffset++;
-    
-    // C3 Check that CBICC is 0x00
-    // - Return an error ('6A 80') if CBICC is not 0x00.
-    if (cbICC != (byte)0) {
-	    ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-	    return (short)0; // Keep static analyser happy
-    }
-
-    // C4 Verify that QeH is a valid public key for the domain parameters of QsICC
-    // - Perform partial public-key validation of QeH [SP800-56A, Section 5.6.2.3.3],
-    //   where the domain parameters are those of QsICC. Also verify that P1 is '27' if the
-    //   domain parameters of QsICC are those of Curve P-256 or that P1 is '2E' if the domain
-    //   parameters of QsICC are those of Curve P-384.
-    // - Return '6A 86' if P1 has the incorrect value.
-    // - Return '6A 80' if publickey validation fails.
-    
-    //
-    // NOTE:
-    // We rely on the public key validation inherit in the underlying platform to achieve public
-    // key domain parameter validation.
-    // TODO: Test this and when it fails, use 6A80 (SW_WRONG_DATA) as the response (in try/catch)
-    //
-    
-    // TODO: Confirm that P1 is '27' if Curve P-256, or '2E' if the domain parameters are P-384
-    if (false) {
-	    ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-	    return (short)0; // Keep static analyser happy
-    }
-    
-    // Skip past the 8-byte IDsh for now
-    inOffset += (short)8;
-    
-    // C5 Z = ECC_CDH (dsICC, QeH)
-    // - Compute the shared secret, Z, using the ECC CDH primitive [SP800-56A, Section 5.7.1.2].
-    keyAgreement.init(privateKey);
-    
-    short len;
-    try
-    {
-		len = keyAgreement.generateSecret(inBuffer, inOffset, inLength, outBuffer, outOffset);	    
-    } catch (CryptoException ex) {
-    	// Step C4 describes validation of the supplied QeH value. If this fails, we return
-    	// SW_WRONG_DATA for all cases, though the real case is for reason 'ILLEGAL_VALUE'.
-	    ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    }
-
-    // C6 Generate nonce NICC
-    // - Create a random nonce, where the length is as specified in Table 14. The nonce should be
-    //   created using an approved random bit generator where the security strength supported by
-    //   the random bit generator is at least as great as the bit length of the nonce being
-    //   generated [SP800-56A, Section 5.3].
-    
-
-    // C7 SKCFRM || SKMAC || SKENC || SKRMAC = KDF (Z, len, Otherinfo)
-    // - Compute the key confirmation key and the session keys. See Section 4.1.6.
-
-    // C8 Zeroize Z
-    // - Destroy shared secret generated in Step C5.
-
-    // C9 AuthCryptogramICC = CMAC(SKCFRM, "KC_1_V" || IDsICC || IDsH || QeH)
-    // - Compute the authentication cryptogram for key confirmation as described in Section 4.1.7.
-
-    // C10 Zeroize SKCFRM
-    // - Destroy the key confirmation key derived in Step C7.
-
-    // C11 Return CBICC || NICC || AuthCryptogramICC || CICC
-      	
-      	
-      }
-
-
   /**
    * Performs an ECDH key agreement
    *
@@ -530,11 +396,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
    */
   @Override
   public short keyAgreement(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset) {
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
 
     if (inLength != marshaledPubKeyLen) {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
@@ -556,32 +418,28 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
    */
   @Override
   public short sign(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset) {
-      	
-      Signature signer = null;
-      
-      switch (inLength) {
-        case MessageDigest.LENGTH_SHA:
-          signer = signerSHA1;
-          break;
-        case MessageDigest.LENGTH_SHA_256:
-          signer = signerSHA256;
-          break;
-        case MessageDigest.LENGTH_SHA_384:
-          signer = signerSHA384;
-          break;
-        case MessageDigest.LENGTH_SHA_512:
-          signer = signerSHA512;
-          break;
-        default:
-          ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-          return (short)0; // Keep compiler happy
-      }
-      	
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
+
+    Signature signer = null;
+
+    switch (inLength) {
+      case MessageDigest.LENGTH_SHA:
+        signer = signerSHA1;
+        break;
+      case MessageDigest.LENGTH_SHA_256:
+        signer = signerSHA256;
+        break;
+      case MessageDigest.LENGTH_SHA_384:
+        signer = signerSHA384;
+        break;
+      case MessageDigest.LENGTH_SHA_512:
+        signer = signerSHA512;
+        break;
+      default:
+        ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+        return (short) 0; // Keep compiler happy
+    }
+
     signer.init(privateKey, Signature.MODE_SIGN);
     return signer.signPreComputedHash(inBuffer, inOffset, inLength, outBuffer, outOffset);
   }

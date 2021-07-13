@@ -26,8 +26,19 @@
 
 package com.makina.security.openfips201;
 
-import javacard.framework.*;
-import javacard.security.*;
+import javacard.framework.ISO7816;
+import javacard.framework.ISOException;
+import javacard.framework.CardRuntimeException;
+
+import javacard.security.PublicKey;
+import javacard.security.PrivateKey;
+import javacard.security.RSAPrivateKey;
+import javacard.security.RSAPublicKey;
+import javacard.security.Signature;
+import javacard.security.KeyBuilder;
+import javacard.security.KeyPair;
+import javacard.security.CryptoException;
+
 import javacardx.crypto.Cipher;
 
 public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
@@ -42,11 +53,11 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   private static final byte ELEMENT_RSA_D = (byte) 0x83;
 
   // NOTE: Currently RSA CRT keys are not used, this is a placeholder
-  //private final byte ELEMENT_RSA_P = (byte) 0x84; // RSA Prime Exponent P
-  //private final byte ELEMENT_RSA_Q = (byte) 0x85; // RSA Prime Exponent Q
-  //private final byte ELEMENT_RSA_DP = (byte) 0x86; // RSA D mod P - 1
-  //private final byte ELEMENT_RSA_DQ = (byte) 0x87; // RSA D mod Q - 1
-  //private final byte ELEMENT_RSA_PQ = (byte) 0x88; // RSA Inverse Q
+  // private final byte ELEMENT_RSA_P = (byte) 0x84; // RSA Prime Exponent P
+  // private final byte ELEMENT_RSA_Q = (byte) 0x85; // RSA Prime Exponent Q
+  // private final byte ELEMENT_RSA_DP = (byte) 0x86; // RSA D mod P - 1
+  // private final byte ELEMENT_RSA_DQ = (byte) 0x87; // RSA D mod Q - 1
+  // private final byte ELEMENT_RSA_PQ = (byte) 0x88; // RSA Inverse Q
 
   // The list of ASN.1 tags for the public components
   private static final byte CONST_TAG_MODULUS = (byte) 0x81; // RSA - The modulus
@@ -60,31 +71,31 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
   }
-  
+
   /*
    * Allows safe allocation of cryptographic service providers at applet instantiation
    */
   public static void createProviders() {
     if (cipher == null) {
-    	try {
-			cipher = Cipher.getInstance(Cipher.ALG_RSA_NOPAD, false);	    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	cipher = null;
-    	}
+      try {
+        cipher = Cipher.getInstance(Cipher.ALG_RSA_NOPAD, false);
+      } catch (CryptoException ex) {
+        // We couldn't create this algorithm, the card may not support it!
+        cipher = null;
+      }
     }
-    
+
     if (signer == null) {
-    	try {
-    		//
-    		// NOTE: We don't care about which RSA Signature mode we instantiate, because we use the 
-    		//       signPrecomputedHash() method anyway. Just choose the most likely to work.
-			signer = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1, false);	    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	signer = null;
-    	}
-    }	  
+      try {
+        //
+        // NOTE: We don't care about which RSA Signature mode we instantiate, because we use the
+        //       signPrecomputedHash() method anyway. Just choose the most likely to work.
+        signer = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1, false);
+      } catch (CryptoException ex) {
+        // We couldn't create this algorithm, the card may not support it!
+        signer = null;
+      }
+    }
   }
 
   /**
@@ -224,11 +235,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
    */
   @Override
   public short sign(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset) {
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
     if (inLength != getBlockLength()) {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
     }
@@ -240,12 +247,8 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   /* Implements RSA Key Transport, which is just a private decrypt operation */
   @Override
   public short keyAgreement(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset) {
-      	
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
+
     if (inLength != getBlockLength()) {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
     }

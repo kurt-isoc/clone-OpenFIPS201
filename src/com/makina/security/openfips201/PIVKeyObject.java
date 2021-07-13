@@ -58,7 +58,7 @@ public abstract class PIVKeyObject extends PIVObject {
   // Used for digital signature verification
   // NOTE: Currently there is no PIV case for this, but reserve it in case we want the extension
   // SYM: Not supported
-  // RSA: Not supported 
+  // RSA: Not supported
   // ECC: Not supported
   public static final byte ROLE_VERIFY = (byte) 0x04;
 
@@ -68,12 +68,11 @@ public abstract class PIVKeyObject extends PIVObject {
   // ECC: ECDH
   public static final byte ROLE_KEY_ESTABLISH = (byte) 0x08;
 
-  // This key can be used for key establishment schemes
+  // This key can be used for secure messaging establishment
   // SYM: Not supported
   // RSA: Not supported
   // ECC: Opacity ZKM (Must have CVC component)
   public static final byte ROLE_SECURE_MESSAGING = (byte) 0x10;
-
 
   //
   // Key Attributes
@@ -84,29 +83,29 @@ public abstract class PIVKeyObject extends PIVObject {
   public static final byte ATTR_ADMIN = (byte) 0x01;
 
   // This key can only be generated on-card (i.e. injection is blocked)
-  public static final byte ATTR_GENERATE_ONLY = (byte)0x02;
+  public static final byte ATTR_GENERATE_ONLY = (byte) 0x02;
 
   // This key is limited to Mutual (host/card) authentication only). Disables EXTERNAL AUTH.
-  public static final byte ATTR_MUTUAL_ONLY = (byte)0x04;
-  
+  public static final byte ATTR_MUTUAL_ONLY = (byte) 0x04;
+
   //
   // Common Key Elements
   //
-  
-  // Used by all key types to delete all key 
+
+  // Used by all key types to delete all key
   protected static final byte ELEMENT_CLEAR = (byte) 0xFF;
-  
+
   //
   // Header Format
   //
-    
+
   protected static final short HEADER_MECHANISM = (short) 3;
   protected static final short HEADER_ROLE = (short) 4;
   protected static final short HEADER_ATTRIBUTES = (short) 5;
-  
+
   private static final short FLAGS_AUTHENTICATED = (short) 0;
   private static final short LENGTH_FLAGS = (short) 1;
-  
+
   // Transient declaration
   private final boolean[] securityFlags;
 
@@ -205,7 +204,7 @@ public abstract class PIVKeyObject extends PIVObject {
   public abstract short getBlockLength();
 
   public abstract void updateElement(byte element, byte[] buffer, short offset, short length);
-  
+
   /**
    * Clears all key elements and marks the key as uninitialised.
    *

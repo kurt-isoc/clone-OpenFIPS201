@@ -26,7 +26,8 @@
 
 package com.makina.security.openfips201;
 
-import javacard.security.*;
+import javacard.security.PublicKey;
+import javacard.security.PrivateKey;
 
 public abstract class PIVKeyObjectPKI extends PIVKeyObject {
 
@@ -52,11 +53,7 @@ public abstract class PIVKeyObjectPKI extends PIVKeyObject {
    * @return the length of the signature
    */
   public abstract short sign(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset);
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset);
 
   /**
    * Performs a key agreement
@@ -70,15 +67,11 @@ public abstract class PIVKeyObjectPKI extends PIVKeyObject {
    * @return the length of the key agreement output
    */
   public abstract short keyAgreement(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset);
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset);
 
   /**
    * Generates a new assymetric key pair and returns the public component.
-   * 
+   *
    * @param scratch the output buffer to hold the generated public component
    * @param offset the starting position of the output buffer
    */

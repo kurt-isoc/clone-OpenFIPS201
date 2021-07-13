@@ -1,6 +1,6 @@
 /******************************************************************************
  * MIT License
- *
+ *
  * Project: OpenFIPS201
  * Copyright: (c) 2017 Commonwealth of Australia
  * Author: Kim O'Sullivan - Makina (kim@makina.com.au)
@@ -26,8 +26,14 @@
 
 package com.makina.security.openfips201;
 
-import javacard.framework.*;
-import javacard.security.*;
+import javacard.framework.ISO7816;
+import javacard.framework.ISOException;
+
+import javacard.security.KeyBuilder;
+import javacard.security.CryptoException;
+import javacard.security.SecretKey;
+import javacard.security.DESKey;
+import javacard.security.AESKey;
 import javacardx.crypto.Cipher;
 
 /** Provides functionality for symmetric PIV key objects */
@@ -45,7 +51,7 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
 
   public PIVKeyObjectSYM(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
-    super(id, modeContact, modeContactless, mechanism, role, attributes);    
+    super(id, modeContact, modeContactless, mechanism, role, attributes);
   }
 
   /*
@@ -53,23 +59,23 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
    */
   public static void createProviders() {
     if (cspTDEA == null) {
-    	try {
-			cspTDEA = Cipher.getInstance(Cipher.ALG_DES_ECB_NOPAD, false);	    	
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	cspTDEA = null;
-    	}
+      try {
+        cspTDEA = Cipher.getInstance(Cipher.ALG_DES_ECB_NOPAD, false);
+      } catch (CryptoException ex) {
+        // We couldn't create this algorithm, the card may not support it!
+        cspTDEA = null;
+      }
     }
     if (cspAES == null) {
-    	try {
-			cspAES = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
-    	} catch (CryptoException ex) {
-	    	// We couldn't create this algorithm, the card may not support it!
-	    	cspAES = null;
-    	}
+      try {
+        cspAES = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_ECB_NOPAD, false);
+      } catch (CryptoException ex) {
+        // We couldn't create this algorithm, the card may not support it!
+        cspAES = null;
+      }
     }
   }
-  
+
   @Override
   public void updateElement(byte element, byte[] buffer, short offset, short length) {
     short keyLengthBytes = getKeyLengthBytes();
@@ -123,27 +129,27 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
     switch (header[HEADER_MECHANISM]) {
       case PIV.ID_ALG_DEFAULT:
       case PIV.ID_ALG_TDEA_3KEY:
-      	// If the TDEA cipher is null, the card does not support this key type!
-      	if (cspTDEA == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+        // If the TDEA cipher is null, the card does not support this key type!
+        if (cspTDEA == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
         key =
             (SecretKey)
                 KeyBuilder.buildKey(KeyBuilder.TYPE_DES, KeyBuilder.LENGTH_DES3_3KEY, false);
         break;
 
       case PIV.ID_ALG_AES_128:
-      	if (cspAES == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+        if (cspAES == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
         key =
             (SecretKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_128, false);
         break;
 
       case PIV.ID_ALG_AES_192:
-      	if (cspAES == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+        if (cspAES == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
         key =
             (SecretKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_192, false);
         break;
 
       case PIV.ID_ALG_AES_256:
-      	if (cspAES == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+        if (cspAES == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
         key =
             (SecretKey) KeyBuilder.buildKey(KeyBuilder.TYPE_AES, KeyBuilder.LENGTH_AES_256, false);
         break;
@@ -208,44 +214,36 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
   }
 
   public short encrypt(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset) {
-    
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
+
     if (inLength != getBlockLength()) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
-    
+
     Cipher cipher;
-    
+
     switch (getMechanism()) {
-	case PIV.ID_ALG_TDEA_3KEY:
-		cipher = cspTDEA;
-					break;
-		
-	case PIV.ID_ALG_AES_128:
-	case PIV.ID_ALG_AES_192:
-	case PIV.ID_ALG_AES_256:
-		cipher = cspAES;
-		break;
-		
-	default:
-		ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
-		return (short)0; // Keep compiler happy
+      case PIV.ID_ALG_TDEA_3KEY:
+        cipher = cspTDEA;
+        break;
+
+      case PIV.ID_ALG_AES_128:
+      case PIV.ID_ALG_AES_192:
+      case PIV.ID_ALG_AES_256:
+        cipher = cspAES;
+        break;
+
+      default:
+        ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+        return (short) 0; // Keep compiler happy
     }
-    
+
     cipher.init(key, Cipher.MODE_ENCRYPT);
     return cipher.doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
   }
 
   public short decrypt(
-      byte[] inBuffer,
-      short inOffset,
-      short inLength,
-      byte[] outBuffer,
-      short outOffset) {
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
 
     if (inLength != getBlockLength()) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
@@ -254,21 +252,21 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
     Cipher cipher;
 
     switch (getMechanism()) {
-	case PIV.ID_ALG_TDEA_3KEY:
-		cipher = cspTDEA;
-					break;
-		
-	case PIV.ID_ALG_AES_128:
-	case PIV.ID_ALG_AES_192:
-	case PIV.ID_ALG_AES_256:
-		cipher = cspAES;
-		break;
-		
-	default:
-		ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
-		return (short)0; // Keep compiler happy
+      case PIV.ID_ALG_TDEA_3KEY:
+        cipher = cspTDEA;
+        break;
+
+      case PIV.ID_ALG_AES_128:
+      case PIV.ID_ALG_AES_192:
+      case PIV.ID_ALG_AES_256:
+        cipher = cspAES;
+        break;
+
+      default:
+        ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+        return (short) 0; // Keep compiler happy
     }
-    
+
     cipher.init(key, Cipher.MODE_DECRYPT);
     return cipher.doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
   }

@@ -26,6 +26,7 @@
 
 package com.makina.security.openfips201;
 
+
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
@@ -36,10 +37,11 @@ public final class PIVDataObject extends PIVObject {
 
   // Indicates whether this object is populated with data or not
   // It exists to cover the scenario where the data memory is allocated, but the write fails mid-way
-  // TODO: Review and remove private static final short HEADER_POPULATED = (short) 3;
+
   // Note:  Do NOT use content.length to determine the number of bytes in the content array
   // rather use getLength().
   public byte[] content;
+  
   // Indicates the number of bytes currently allocated.  In the case where an object is
   // reallocated with a smaller size this will be less than content.length
   private short bytesAllocated;
