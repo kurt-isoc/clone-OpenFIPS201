@@ -178,7 +178,7 @@ public abstract class PIVKeyObject extends PIVObject {
   }
 
   public final boolean hasAttribute(byte attribute) {
-    return ((header[HEADER_ROLE] & attribute) == attribute);
+    return ((header[HEADER_ATTRIBUTES] & attribute) == attribute);
   }
 
   public final void resetSecurityStatus() {
