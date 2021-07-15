@@ -45,6 +45,7 @@ public final class OpenFIPS201 extends Applet {
   // GlobalPlatform instructions for establishing a Secure Channel
   private static final byte INS_GP_INITIALIZE_UPDATE = (byte) 0x50;
   private static final byte INS_GP_EXTERNAL_AUTHENTICATE = (byte) 0x82;
+  private static final byte INS_GP_GET_RESPONSE = (byte) 0xC0;
   /*
    * Applet Commands - PIV STANDARD
    */
@@ -60,7 +61,6 @@ public final class OpenFIPS201 extends Applet {
   private static final byte INS_PIV_GENERAL_AUTHENTICATE = (byte) 0x87;
   private static final byte INS_PIV_PUT_DATA = (byte) 0xDB;
   private static final byte INS_PIV_GENERATE_ASSYMETRIC_KEYPAIR = (byte) 0x47;
-  private static final byte INS_GET_RESPONSE = (byte) 0xC0;
   // Helper constants
   private static final short ZERO_SHORT = (short) 0;
   private static final byte SC_MASK =
@@ -126,11 +126,12 @@ public final class OpenFIPS201 extends Applet {
       secureChannel = GPSystem.getSecureChannel();
     }
 
-    //
+    //c;\
+    
     // Handle incoming APDUs
     //
     // Process any commands that are wrapped by a GlobalPlatform Secure Channel
-    final byte media = (byte) (APDU.getProtocol() & APDU.PROTOCOL_MEDIA_MASK);
+    byte media = (byte)(APDU.getProtocol() & APDU.PROTOCOL_MEDIA_MASK);
 
     final boolean contactless =
         (media == APDU.PROTOCOL_MEDIA_CONTACTLESS_TYPE_A
@@ -195,7 +196,7 @@ public final class OpenFIPS201 extends Applet {
 
     // Call the appropriate process method based on the INS
     switch (buffer[ISO7816.OFFSET_INS]) {
-      case INS_GET_RESPONSE:
+      case INS_GP_GET_RESPONSE:
         chainBuffer.processOutgoing(apdu);
         break;
 
@@ -480,24 +481,21 @@ public final class OpenFIPS201 extends Applet {
             || buffer[ISO7816.OFFSET_P2] == PIV.ID_KEY_PIN
             || buffer[ISO7816.OFFSET_P2] == PIV.ID_KEY_PUK);
 
-    // PRE-CONDITION 2 - If the P2 value is set to one of the standard PIN references but the P1
-    // value is set to CONST_P1_ADMIN,
-    //					 we consider this an administrative command for the purposes of changing the PINs over
-    // SCP
+    // PRE-CONDITION 2 - If the P2 value is set to one of the standard PIN references but the P1									  
+    // value is set to CONST_P1_ADMIN, we consider this an administrative command for the purposes 
+    // of changing the PINs over SCP
     if (isStandard && buffer[ISO7816.OFFSET_P1] == CONST_P1_ADMIN) {
       isStandard = false;
     }
 
-    // PRE-CONDITION 3 - If the P2 value is set to one of the standard PIN references, the P1 value
-    // must be equal
-    //					 to the constant CONST_P1
+    // PRE-CONDITION 3 - If the P2 value is set to one of the standard PIN references, the P1 value					
+    // must be equal to the constant CONST_P1
     if (isStandard && buffer[ISO7816.OFFSET_P1] != CONST_P1) {
       ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
     }
 
-    // PRE-CONDITION 4 - If the P2 value is set to one of the standard PIN references, the LC
-    // (length) value must
-    //					 be equal to the constant CONST_LC
+    // PRE-CONDITION 4 - If the P2 value is set to one of the standard PIN references, the LC						  
+    // (length) value must be equal to the constant CONST_LC
     if (isStandard && length != CONST_LC) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
