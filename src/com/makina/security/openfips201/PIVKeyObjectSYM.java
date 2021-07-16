@@ -216,9 +216,19 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
   public short encrypt(
       byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
 
-    if (inLength != getBlockLength()) {
-      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    }
+	// PRE-CONDITION 1 - The length must be equal to the block length
+	Assert.isEqual(inLength, getBlockLength());
+    
+    // PRE-CONDITION 2 - If the input and output buffers are equal, we must not clobber the input
+    // From the Javacard Cipher documentation:
+    // When using block-aligned data (multiple of block size), if the input buffer, inBuff and
+    // the output buffer, outBuff are the same array, then the output data area must not 
+    // partially overlap the input data area such that the input data is modified before it is 
+    // used; if inBuff==outBuff and inOffset < outOffset < inOffset+inLength, incorrect output 
+    // may result.
+    Assert.isFalse((inBuffer == outBuffer) && 
+				   (inOffset < outOffset) && 
+				   (outOffset < (short)(inOffset + inLength)));
 
     Cipher cipher;
 

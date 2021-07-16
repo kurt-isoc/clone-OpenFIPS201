@@ -34,7 +34,6 @@ import javacard.security.PublicKey;
 import javacard.security.PrivateKey;
 import javacard.security.RSAPrivateKey;
 import javacard.security.RSAPublicKey;
-import javacard.security.Signature;
 import javacard.security.KeyBuilder;
 import javacard.security.KeyPair;
 import javacard.security.CryptoException;
@@ -62,9 +61,9 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   // The list of ASN.1 tags for the public components
   private static final byte CONST_TAG_MODULUS = (byte) 0x81; // RSA - The modulus
   private static final byte CONST_TAG_EXPONENT = (byte) 0x82; // RSA - The public exponent
+  private static final short CONST_LENGTH_EXPONENT = (short)3; // RSA - The public exponent length
 
   // Cipher implementations (static so they are shared with all instances of PIVKeyObjectRSA)
-  private static Signature signer = null;
   private static Cipher cipher = null;
 
   public PIVKeyObjectRSA(
@@ -82,18 +81,6 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
       } catch (CryptoException ex) {
         // We couldn't create this algorithm, the card may not support it!
         cipher = null;
-      }
-    }
-
-    if (signer == null) {
-      try {
-        //
-        // NOTE: We don't care about which RSA Signature mode we instantiate, because we use the
-        //       signPrecomputedHash() method anyway. Just choose the most likely to work.
-        signer = Signature.getInstance(Signature.ALG_RSA_SHA_PKCS1, false);
-      } catch (CryptoException ex) {
-        // We couldn't create this algorithm, the card may not support it!
-        signer = null;
       }
     }
   }
@@ -240,8 +227,26 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
     }
 
-    signer.init(privateKey, Signature.MODE_SIGN);
-    return signer.signPreComputedHash(inBuffer, inOffset, inLength, outBuffer, outOffset);
+	//
+	// IMPLEMENTATION NOTE:
+	// If you think the operation below looks insane, that's OK. This requires explanation.
+	// The PIV standard implements RSA digital signatures in a way that does not force you
+	// to choose a specific padding scheme (though they recomend PKCS#1.5 or OAEP). This means
+	// the client does not send the data to be signed, or even just the hash value. Instead,
+	// it sends a fully-formatted block including the hash and all padding.
+	//
+	// The problem here is that the Javacard Signature object can only sign in two ways.
+	// 1) Pass all data to update() and/or sign() which generates the hash, pads and encrypts.
+	// 2) Pass the hash to signPreComputedHash() which validates the length, pads and encrypts.
+	//
+	// Neither of the above is suited to taking a fully-formed block, so we are left with the 
+	// only remaining option, which is to perform a private key encryption operation, which makes
+	// us feel awkward and wrong.
+	//
+	// Yep, that's it.
+	//
+	cipher.init(privateKey, Cipher.MODE_ENCRYPT);
+	return cipher.doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
   }
 
   /* Implements RSA Key Transport, which is just a private decrypt operation */
@@ -289,17 +294,18 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
 
       // Exponent
       writer.writeTag(CONST_TAG_EXPONENT);
-      writer.writeLength((short) 3); // Hack! Why can't we get the size from RSAPublicKey?
+      writer.writeLength(CONST_LENGTH_EXPONENT);
+      
       outOffset = writer.getOffset();
       outOffset += ((RSAPublicKey) publicKey).getExponent(outBuffer, outOffset);
       writer.setOffset(outOffset); // Move the current position forward
 
       length = writer.finish();
-    } catch (CardRuntimeException cre) {
+    } catch (CardRuntimeException ex) {
       // At this point we are in a nondeterministic state so we will
       // clear both the public and private keys if they exist
       clear();
-      CardRuntimeException.throwIt(cre.getReason());
+      CardRuntimeException.throwIt(ex.getReason());
     } finally {
       // We new'd these objects so we make sure the memory is freed up once they are out of scope.
       runGc();

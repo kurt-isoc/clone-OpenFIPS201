@@ -1103,16 +1103,16 @@ public final class PIV {
     // Loop through all tags
     do {
       if (tlvReader.match(CONST_TAG_AUTH_CHALLENGE)) {
-        challengeOffset = tlvReader.getOffset();
+        challengeOffset = tlvReader.getDataOffset();
         challengeLength = tlvReader.getLength();
       } else if (tlvReader.match(CONST_TAG_AUTH_CHALLENGE_RESPONSE)) {
-        responseOffset = tlvReader.getOffset();
+        responseOffset = tlvReader.getDataOffset();
         responseLength = tlvReader.getLength();
       } else if (tlvReader.match(CONST_TAG_AUTH_WITNESS)) {
-        witnessOffset = tlvReader.getOffset();
+        witnessOffset = tlvReader.getDataOffset();
         witnessLength = tlvReader.getLength();
       } else if (tlvReader.match(CONST_TAG_AUTH_EXPONENTIATION)) {
-        exponentiationOffset = tlvReader.getOffset();
+        exponentiationOffset = tlvReader.getDataOffset();
         exponentiationLength = tlvReader.getLength();
       } else {
         // We have come across an unknown tag value. Other implementations ignore these and so shall we.
@@ -1224,7 +1224,7 @@ public final class PIV {
     // The client requests a CHALLENGE from the CARD, which returns the CHALLENGE in plaintext
     else if (challengeOffset != 0 && challengeLength == 0) {
       if (key instanceof PIVKeyObjectSYM) {
-        return generalAuthenticateCase2((PIVKeyObjectSYM) key, challengeOffset, challengeLength);
+        return generalAuthenticateCase2((PIVKeyObjectSYM) key);
       } else {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1270,7 +1270,7 @@ public final class PIV {
     //
     else if (witnessOffset != 0 && witnessLength == 0) {
       if (key instanceof PIVKeyObjectSYM) {
-        return generalAuthenticateCase4((PIVKeyObjectSYM) key, witnessOffset, witnessLength);
+        return generalAuthenticateCase4((PIVKeyObjectSYM) key);
       } else {
         authenticateReset();
         PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1365,20 +1365,11 @@ public final class PIV {
     // PRE-CONDITIONS
     //
 
-    // PRE-CONDITION 1 - The key must have the correct role
-    if (!key.hasRole(PIVKeyObject.ROLE_SIGN)) {
-      PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-      ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-    }
-
-    // PRE-CONDITION 2 - The CHALLENGE tag length must be the same as our block length
+    // PRE-CONDITION 1 - The CHALLENGE tag length must be the same as our block length
     if (challengeLength != key.getBlockLength()) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
-
-    // Move to our challenge data
-    tlvReader.setOffset(challengeOffset);
 
     //
     // IMPLEMENTATION NOTE:
@@ -1386,33 +1377,87 @@ public final class PIV {
     // Since our input and output data is structured the same way, we make use of the same
     // scratch buffer and perform the cipher in-place. This saves us from using the APDU
     // buffer as a temporary working space and performing an extra copy.
+    // We don't know the exact length of the signature until we do it. Since we could be writing
+    // a short-form length (ECC) or long-form (RSA), the TLV header could be either 4 or 8 bytes
+    // long.
     //
+    // The approach is to leave 8 bytes free for the long-form header, then once we know what
+    // the actual length is, we go back by the right length to write the header.
+    //
+    // NOTE:
+    // You might be thinking "but if you know the algorithm and key size, you know the length!".
+    // You would be right, but unfortunately some implementations put a leading '00' byte in front
+    // of their signature data and some don't, so we just wait until we know exactly. It might
+    // seem like a pain but it does save an array copy and prevents use of the APDU buffer, so
+    // we think it's worth it.
+    //
+    
+    //
+    // MECHANISM CASES:
+    // ECC256  - Challenge block is 32 bytes and Signature is 64-70 bytes (single-byte length)
+    // ECC384  - Challenge block is 48 bytes and Signature is 96-102 bytes (single-byte length)
+    // RSA1024 - Challenge block is 128 bytes and Signature is 128 bytes (double-byte length)
+    // RSA2048 - Challenge block is 256 bytes and Signature is 256 bytes (triple-byte length)
+    //
+    // NOTES:
+    // - In all cases, the challenge length must be equal to the key/block length 
+    // - Given the above cases, if the challenge length is less than 127, we can categorise it
+    //   as a TLV short form length.
+    // - RSA1024 should not be permitted for this operation, but that should be restricted
+    //   using key roles rather than here.
 
-    // Encrypt/Sign the CHALLENGE data
-    short offset = tlvReader.getDataOffset();
-
-    // Write out the response TLV, passing through the challenge length as an indicative maximum
+	// Construct the TLV response and RESPONSE tag
     TLVWriter writer = TLVWriter.getInstance();
-    writer.init(scratch, (short) 0, challengeLength, CONST_TAG_AUTH_TEMPLATE);
-
-    // Create the RESPONSE tag
+	writer.init(scratch, (short)0, challengeLength, CONST_TAG_AUTH_TEMPLATE);		
     writer.writeTag(CONST_TAG_AUTH_CHALLENGE_RESPONSE);
-    writer.writeLength(challengeLength);
 
+	short offset = writer.getOffset();
+	if (challengeLength <= TLVWriter.LENGTH_1BYTE_MAX) {
+		// Single-byte form
+		offset += (short)1;
+	} else if (challengeLength <= TLVWriter.LENGTH_2BYTE_MAX) {
+		// Double-byte form
+		offset += (short)2;
+	} else {
+		// Triple-byte form
+		offset += (short)3;
+	}
+
+	
+    // Sign the CHALLENGE data to the location specified by 'offset'
+	short length;
     try {
-      offset += key.sign(scratch, offset, challengeLength, scratch, offset);
+      length = key.sign(scratch, challengeOffset, challengeLength, scratch, offset);
     } catch (Exception e) {
       authenticateReset();
       // Presume that we have a problem with the input data, instead of throwing 6F00.
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      return (short)0; // Keep static analyser happy
     }
 
+	//
+	// The writer object is still pointing to where the length needs to be written, so
+	// we can write the length
+	//
+	
+    writer.writeLength(length);
+    
+	// Sanity check that the writer offset is now at the same point we wrote our data. If not,
+	// something went wrong in our length estimation! This shouldn't happen.
+	if (writer.getOffset() != offset) {
+		authenticateReset();
+		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+		return (short)0; // Keep static analyser happy
+	}
+	
+	// Now we can move past the signature data
+	writer.move(length);
+
     // Finalise the TLV object and get the entire data object length
-    writer.setOffset(offset);
-    short length = writer.finish();
+    length = writer.finish();
 
     // Set up the outgoing command chain
-    chainBuffer.setOutgoing(scratch, (short) 0, length, true);
+    chainBuffer.setOutgoing(scratch, (short)0, length, true);
 
     // Done, return the length of data we are sending
     return length;
@@ -1429,20 +1474,11 @@ public final class PIV {
     // PRE-CONDITIONS
     //
 
-    // PRE-CONDITION 1 - The key must have the correct role
-    if (!key.hasRole(PIVKeyObject.ROLE_SIGN)) {
-      PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-      ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-    }
-
-    // PRE-CONDITION 2 - The CHALLENGE tag length must be the same as our block length
+    // PRE-CONDITION 1 - The CHALLENGE tag length must be the same as our block length
     if (challengeLength != key.getBlockLength()) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
-
-    // Move to our challenge data
-    tlvReader.setOffset(challengeOffset);
 
     //
     // IMPLEMENTATION NOTE:
@@ -1450,33 +1486,80 @@ public final class PIV {
     // Since our input and output data is structured the same way, we make use of the same
     // scratch buffer and perform the cipher in-place. This saves us from using the APDU
     // buffer as a temporary working space and performing an extra copy.
+    // We don't know the exact length of the data until we do it. Since we could be writing
+    // a short-form length (ECC) or long-form (RSA), the TLV header could be either 4 or 8 bytes
+    // long.
     //
+    // The approach is to leave 8 bytes free for the long-form header, then once we know what
+    // the actual length is, we go back by the right length to write the header.
+    //
+    // NOTE:
+    // You might be thinking "but if you know the algorithm and key size, you know the length!".
+    // You would be right, but unfortunately some implementations put a leading '00' byte in front
+    // of their signature data and some don't, so we just wait until we know exactly. It might
+    // seem like a pain but it does save an array copy and prevents use of the APDU buffer, so
+    // we think it's worth it.
+    //
+    
+    //
+    // MECHANISM CASES:
+    // RSA1024 - Challenge block is 128 bytes and Signature is 128 bytes (double-byte length)
+    // RSA2048 - Challenge block is 256 bytes and Signature is 256 bytes (triple-byte length)
+    //
+    // NOTES:
+    // - In all cases, the challenge length must be equal to the key/block length 
+    // - ECC keys are not valid for this case
 
-    // Encrypt/Sign the CHALLENGE data
-    short offset = tlvReader.getDataOffset();
-
-    // Write out the response TLV, passing through the challenge length as an indicative maximum
+	// Construct the TLV response and RESPONSE tag
     TLVWriter writer = TLVWriter.getInstance();
-    writer.init(scratch, (short) 0, challengeLength, CONST_TAG_AUTH_TEMPLATE);
-
-    // Create the RESPONSE tag
+	writer.init(scratch, (short)0, challengeLength, CONST_TAG_AUTH_TEMPLATE);		
     writer.writeTag(CONST_TAG_AUTH_CHALLENGE_RESPONSE);
-    writer.writeLength(challengeLength);
 
+	short offset = writer.getOffset();
+	if (challengeLength <= TLVWriter.LENGTH_1BYTE_MAX) {
+		// Single-byte form
+		offset += (short)1;
+	} else if (challengeLength <= TLVWriter.LENGTH_2BYTE_MAX) {
+		// Double-byte form
+		offset += (short)2;
+	} else {
+		// Triple-byte form
+		offset += (short)3;
+	}
+	
+    // Decrypt the CHALLENGE data
+	short length;
     try {
-      offset += key.sign(scratch, offset, challengeLength, scratch, offset);
+      length = key.keyAgreement(scratch, challengeOffset, challengeLength, scratch, offset);
     } catch (Exception e) {
       authenticateReset();
       // Presume that we have a problem with the input data, instead of throwing 6F00.
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      return (short)0; // Keep static analyser happy
     }
 
+	//
+	// The writer object is still pointing to where the length needs to be written, so
+	// we can write the length
+	//	
+    writer.writeLength(length);
+    
+	// Sanity check that the writer offset is now at the same point we wrote our data. If not,
+	// something went wrong in our length estimation! This shouldn't happen.
+	if (writer.getOffset() != offset) {
+		authenticateReset();
+		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+		return (short)0; // Keep static analyser happy
+	}
+	
+	// Now we can move past the decrypted data
+	writer.move(length);
+
     // Finalise the TLV object and get the entire data object length
-    writer.setOffset(offset);
-    short length = writer.finish();
+    length = writer.finish();
 
     // Set up the outgoing command chain
-    chainBuffer.setOutgoing(scratch, (short) 0, length, true);
+    chainBuffer.setOutgoing(scratch, (short)0, length, true);
 
     // Done, return the length of data we are sending
     return length;
@@ -1493,26 +1576,17 @@ public final class PIV {
     // PRE-CONDITIONS
     //
 
-    // PRE-CONDITION 1 - The key must have the AUTHENTICATE role
-    if (!key.hasRole(PIVKeyObject.ROLE_AUTHENTICATE)) {
-      PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
-      ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-    }
-
-    // PRE-CONDITION 2 - The key MUST NOT have the MUTUAL_ONLY attribute set
+    // PRE-CONDITION 1 - The key MUST NOT have the MUTUAL_ONLY attribute set
     if (key.hasAttribute(PIVKeyObject.ATTR_MUTUAL_ONLY)) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
     }
 
-    // PRE-CONDITION 3 - The CHALLENGE tag length must be the same as our block length
+    // PRE-CONDITION 2 - The CHALLENGE tag length must be the same as our block length
     if (challengeLength != key.getBlockLength()) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
-
-    // Move to our challenge data
-    tlvReader.setOffset(challengeOffset);
 
     //
     // IMPLEMENTATION NOTE:
@@ -1522,9 +1596,6 @@ public final class PIV {
     // buffer as a temporary working space and performing an extra copy.
     //
 
-    // Encrypt/Sign the CHALLENGE data
-    short offset = tlvReader.getDataOffset();
-
     // Write out the response TLV, passing through the challenge length as an indicative maximum
     TLVWriter writer = TLVWriter.getInstance();
     writer.init(scratch, (short) 0, challengeLength, CONST_TAG_AUTH_TEMPLATE);
@@ -1533,8 +1604,10 @@ public final class PIV {
     writer.writeTag(CONST_TAG_AUTH_CHALLENGE_RESPONSE);
     writer.writeLength(challengeLength);
 
+    // Encrypt the CHALLENGE data
+	short offset = writer.getOffset();
     try {
-      offset += key.encrypt(scratch, offset, challengeLength, scratch, offset);
+      offset += key.encrypt(scratch, challengeOffset, challengeLength, scratch, offset);
     } catch (Exception e) {
       authenticateReset();
 
@@ -1553,8 +1626,7 @@ public final class PIV {
     return length;
   }
 
-  private short generalAuthenticateCase2(
-      PIVKeyObjectSYM key, short challengeOffset, short challengeLength) {
+  private short generalAuthenticateCase2(PIVKeyObjectSYM key) {
 
     //
     // CASE 2 - EXTERNAL AUTHENTICATE REQUEST
@@ -1573,7 +1645,7 @@ public final class PIV {
     // PRE-CONDITIONS
     //
 
-    // PRE-CONDITION 1 - The key must have the correct role
+    // PRE-CONDITION 1 - The key must have the AUTHENTICATE role
     if (!key.hasRole(PIVKeyObject.ROLE_AUTHENTICATE)) {
       authenticateReset();
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1659,10 +1731,9 @@ public final class PIV {
     }
 
     // Compare the authentication statuses
-    tlvReader.setOffset(responseOffset);
     if (Util.arrayCompare(
             scratch,
-            tlvReader.getDataOffset(),
+            responseOffset,
             authenticationContext,
             OFFSET_AUTH_CHALLENGE,
             responseLength)
@@ -1683,8 +1754,7 @@ public final class PIV {
     return (short) 0;
   }
 
-  private short generalAuthenticateCase4(
-      PIVKeyObjectSYM key, short witnessOffset, short witnessLength) {
+  private short generalAuthenticateCase4(PIVKeyObjectSYM key) {
 
     //
     // CASE 4 - MUTUAL AUTHENTICATE REQUEST
@@ -1704,7 +1774,6 @@ public final class PIV {
 
     // PRE-CONDITION 1 - The key must have the correct role
     if (!key.hasRole(PIVKeyObject.ROLE_AUTHENTICATE)) {
-      authenticateReset();
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
     }
@@ -1728,7 +1797,7 @@ public final class PIV {
     short offset = writer.getOffset();
     offset += key.encrypt(authenticationContext, OFFSET_AUTH_CHALLENGE, length, scratch, offset);
     writer.setOffset(offset); // Update the TLV offset value
-
+	
     // Finalise the TLV object and get the entire data object length
     length = writer.finish();
 
@@ -1794,10 +1863,9 @@ public final class PIV {
     }
 
     // Compare the authentication statuses
-    tlvReader.setOffset(witnessOffset);
     if (Util.arrayCompare(
             scratch,
-            tlvReader.getDataOffset(),
+            witnessOffset,
             authenticationContext,
             OFFSET_AUTH_CHALLENGE,
             witnessLength)
@@ -1811,7 +1879,6 @@ public final class PIV {
 
     // > Client application requests encryption of CHALLENGE data from the card using the
     // > same key.
-    tlvReader.setOffset(challengeOffset);
 
     // Write out the response TLV, passing through the block length as an indicative maximum
     TLVWriter writer = TLVWriter.getInstance();
@@ -1823,7 +1890,7 @@ public final class PIV {
     short offset = writer.getOffset();
 
     // Encrypt the CHALLENGE data
-    offset += key.encrypt(scratch, tlvReader.getDataOffset(), challengeLength, scratch, offset);
+    offset += key.encrypt(scratch, challengeOffset, challengeLength, scratch, offset);
 
     // Update the TLV offset value
     writer.setOffset(offset);
@@ -1871,28 +1938,19 @@ public final class PIV {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
 
-    // TODO: Get rid of this once we are correctly checking the new role/usage implementation
-    if (!(key instanceof PIVKeyObjectECC)) {
-      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
-    }
-
-    // Verify that the EXPONENTIATION tag length is the same as a ECC public key
-    tlvReader.setOffset(exponentiationOffset);
-
     // Write out the response TLV, passing through the block length as an indicative maximum
     TLVWriter writer = TLVWriter.getInstance();
     writer.init(scratch, (short) 0, length, CONST_TAG_AUTH_TEMPLATE);
 
     // Create the RESPONSE tag
     writer.writeTag(CONST_TAG_AUTH_CHALLENGE_RESPONSE);
-    writer.writeLength(length);
+    writer.writeLength(key.getKeyLengthBytes());
 
     // Compute the shared secret
-    short offset = writer.getOffset();
-    offset += key.keyAgreement(scratch, tlvReader.getDataOffset(), length, scratch, offset);
+    length = key.keyAgreement(scratch, exponentiationOffset, exponentiationLength, scratch, writer.getOffset());
 
-    // Update the TLV offset value
-    writer.setOffset(offset);
+    // Move to the end of the key agreement output data
+    writer.move(length);
 
     // Finalise the TLV object and get the entire data object length
     length = writer.finish();
@@ -2285,7 +2343,7 @@ public final class PIV {
       if (!verifyPinFormat(ID_KEY_PIN, scratch, (short) 0, length)) {
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
       }
-
+ 
       // Update the PIN
       cspPIV.cardPIN.update(scratch, (short) 0, (byte) length);
 

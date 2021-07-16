@@ -48,10 +48,10 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   private static final byte CONST_POINT_UNCOMPRESSED = (byte) 0x04;
 
   // The ECC public key element tag
-  private static final byte ELEMENT_ECC_POINT = (byte) 0x88;
+  private static final byte ELEMENT_ECC_POINT = (byte) 0x86;
 
   // The ECC private key element tag
-  private static final byte ELEMENT_ECC_SECRET = (byte) 0x89;
+  private static final byte ELEMENT_ECC_SECRET = (byte) 0x87;
 
   private final ECParams params;
   private final short marshaledPubKeyLen;
