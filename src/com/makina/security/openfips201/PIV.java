@@ -121,8 +121,6 @@ public final class PIV {
   private final byte[] scratch;
   // Holds any authentication related intermediary state
   private final byte[] authenticationContext;
-  // TLV management objects
-  final TLVReader tlvReader;
   // Data Store
   private PIVDataObject firstDataObject;
 
@@ -149,8 +147,9 @@ public final class PIV {
     // Create our PIV Security Provider
     cspPIV = new PIVSecurityProvider();
 
-    // Create our TLV objects
-    tlvReader = new TLVReader(); // TODO: Convert to singleton
+    // Create our TLV objects (we don't care about the result)
+    TLVReader.getInstance();
+    TLVWriter.getInstance();
 
     //
     // Pre-Personalisation
@@ -179,8 +178,7 @@ public final class PIV {
 
 	//
 	// Test File System
-	//
-	
+	//	
 	createDataObject((byte)0x01, (byte)0x7F, (byte)0x7F);
 	createDataObject((byte)0x02, (byte)0x7F, (byte)0x7F);
 	createDataObject((byte)0x03, (byte)0x01, (byte)0x01);
@@ -216,45 +214,44 @@ public final class PIV {
 	createDataObject((byte)0x61, (byte)0x7F, (byte)0x7F);
 	createDataObject((byte)0x7E, (byte)0x7F, (byte)0x7F);
 
-	cspPIV.createKey((byte)0x82, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x83, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x84, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x85, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x86, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x87, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x88, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x89, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x8A, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x8B, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x8C, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x8D, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x8E, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x8F, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x90, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x91, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x92, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x93, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x94, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x95, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x9A, (byte)0x01, (byte)0x00, (byte)0x11, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x9A, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x00);
+	cspPIV.createKey((byte)0x82, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x83, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x84, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x85, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x86, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x87, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x88, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x89, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x8A, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x8B, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x8C, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x8D, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x8E, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x8F, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x90, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x91, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x92, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x93, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x94, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x95, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x9A, (byte)0x01, (byte)0x00, (byte)0x11, (byte)0x02, (byte)0x10);
+	cspPIV.createKey((byte)0x9A, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x10);
 	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x03, (byte)0x01, (byte)0x01);
 	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x08, (byte)0x01, (byte)0x01);
 	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x0A, (byte)0x01, (byte)0x01);
 	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x0C, (byte)0x01, (byte)0x01);
-	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x00, (byte)0x11, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x00, (byte)0x14, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x02, (byte)0x07, (byte)0x02, (byte)0x00);
-	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x00, (byte)0x11, (byte)0x08, (byte)0x00);
-	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x00, (byte)0x14, (byte)0x08, (byte)0x00);
-	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x00);
+	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x00, (byte)0x11, (byte)0x02, (byte)0x10);
+	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x00, (byte)0x14, (byte)0x02, (byte)0x10);
+	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x02, (byte)0x07, (byte)0x02, (byte)0x10);
+	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x00, (byte)0x11, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x00, (byte)0x14, (byte)0x08, (byte)0x10);
+	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
 	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x03, (byte)0x01, (byte)0x00);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x07, (byte)0x02, (byte)0x00);
+	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x07, (byte)0x02, (byte)0x10);
 	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x08, (byte)0x01, (byte)0x00);
 	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x0A, (byte)0x01, (byte)0x00);
 	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x0C, (byte)0x01, (byte)0x00);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x11, (byte)0x02, (byte)0x00);
-
+	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x11, (byte)0x02, (byte)0x10);
   }
 
   /**
@@ -265,7 +262,7 @@ public final class PIV {
    * @param length The length of the CDATA section
    * @return The length of the returned APT object
    */
-  public short select(byte[] buffer, short offset, short length) {
+  public short select(byte[] buffer, short offset) {
 
     //
     // PRE-CONDITIONS
@@ -484,8 +481,9 @@ public final class PIV {
         // SPECIAL OBJECT - Biometric Information Template Group
         //
       case CONST_TAG_BIOMETRIC_1:
-        if (buffer[(short) (offset + 1)] != CONST_TAG_BIOMETRIC_2)
-          ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
+        if (buffer[(short) (offset + 1)] != CONST_TAG_BIOMETRIC_2) {
+          ISOException.throwIt(SW_REFERENCE_NOT_FOUND);	        
+        }
         id = CONST_TAG_BIOMETRIC_2; // Store it as our object ID
         break;
 
@@ -510,8 +508,13 @@ public final class PIV {
         offset++; // Move to the DATA tag
         if (buffer[offset] != CONST_DATA) {
           ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+          return; // Keep static analyser happy
         }
         break;
+        
+	default:
+		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        return; // Keep static analyser happy
     }
 
     // The offset now holds the correct position for writing the object, including the DATA tag
@@ -520,6 +523,7 @@ public final class PIV {
     PIVDataObject obj = findDataObject(id);
     if (obj == null) {
       ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
+      return; // Keep static analyser happy
     }
 
     //
@@ -581,6 +585,7 @@ public final class PIV {
 
       default:
         ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
+        return; // Keep static analyser happy
     }
 
     // PRE-CONDITION 2 - If FEATURE_PIN_OVER_CONTACTLESS is not set, the interface must be contact
@@ -662,13 +667,14 @@ public final class PIV {
 
       default:
         ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
+        return; // Keep static analyser happy
     }
 
     // If P1='00', and Lc and the command data field are absent, the command can be used to retrieve
     // the number of further retries allowed ('63 CX'), or to check whether verification is not
     // needed ('90 00').
 
-    // Check for blocked
+    // Check for a blocked PIN
     if (pin.getTriesRemaining() == (byte) 0) ISOException.throwIt(SW_OPERATION_BLOCKED);
 
     // If we are not validated
@@ -709,6 +715,7 @@ public final class PIV {
 
       default:
         ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
+        return; // Keep static analyser happy
     }
 
     // Reset the requested PIN
@@ -752,7 +759,7 @@ public final class PIV {
     // NOTE: This is handled in the switch statement and is configurable at compile-time
 
     OwnerPIN pin = null;
-    byte intermediateLimit = (byte) 0;
+    byte intermediateLimit;
 
     switch (id) {
       case ID_KEY_GLOBAL_PIN:
@@ -803,6 +810,7 @@ public final class PIV {
 
       default:
         ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
+        return; // Keep static analyser happy
     }
 
     // If the current value of the retry counter associated with the key reference is zero, then the
@@ -847,6 +855,11 @@ public final class PIV {
     // If the new reference data (PIN) in the command data field of the command does not satisfy the
     // criteria in Section 2.4.3, then the PIV Card Application shall return the status word '6A
     // 80'.
+
+	// Ensure the supplied length is exactly two PIN maximum lengths
+	if (length != ((short)2 * Config.PIN_LENGTH_MAX)) {
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);		
+	}
 
     // Verify the authentication reference data (old PIN) format
     if (!verifyPinFormat(id, buffer, offset, Config.PIN_LENGTH_MAX)) {
@@ -920,12 +933,17 @@ public final class PIV {
     // card, the PIV Card Application shall return the status word '6A 88'.
     if (id != ID_KEY_PIN) ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
 
+    // PRE-CONDITION 3 - The supplied length must equal the PUK + NEW PIN lengths
+    // If the current value of the PUK's retry counter is zero, then the PIN's retry counter shall
+    // not be reset and the PIV Card Application shall return the status word '69 83'.
+    if (length != ((short)2 * Config.PIN_LENGTH_MAX)) ISOException.throwIt(SW_OPERATION_BLOCKED);
+
     // PRE-CONDITION 3 - The PUK must not be blocked
     // If the current value of the PUK's retry counter is zero, then the PIN's retry counter shall
     // not be reset and the PIV Card Application shall return the status word '69 83'.
     if (cspPIV.cardPUK.getTriesRemaining() == (short) 0) ISOException.throwIt(SW_OPERATION_BLOCKED);
 
-    // PRE-CONDITION 3 - Check the format of the NEW pin value
+    // PRE-CONDITION 4 - Check the format of the NEW pin value
     // If the new reference data (PIN) in the command data field of the command does not satisfy the
     // criteria in Section 2.4.3, then the PIV Card Application shall return the status word '6A
     // 80'.
@@ -1037,7 +1055,8 @@ public final class PIV {
     // original buffer still contains the APDU header.
 
     // Set up our TLV reader
-    tlvReader.init(scratch, (short) 0, length);
+    TLVReader reader = TLVReader.getInstance();
+    reader.init(scratch, (short) 0, length);
 
     //
     // PRE-CONDITIONS
@@ -1071,14 +1090,14 @@ public final class PIV {
     }
 
     // PRE-CONDITION 4 - The Dynamic Authentication Template tag must be present in the data
-    if (!tlvReader.find(CONST_TAG_AUTH_TEMPLATE)) {
+    if (!reader.find(CONST_TAG_AUTH_TEMPLATE)) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_DATA_INVALID);
       return (short)0; // Keep compiler happy
     }
 
     // Move into the content of the template
-    tlvReader.moveInto();
+    reader.moveInto();
 
     //
     // EXECUTION STEPS
@@ -1098,29 +1117,29 @@ public final class PIV {
     short exponentiationLength = (short) 0;
 
     // Save the offset in the TLV object
-    offset = tlvReader.getOffset();
+    offset = reader.getOffset();
 
     // Loop through all tags
     do {
-      if (tlvReader.match(CONST_TAG_AUTH_CHALLENGE)) {
-        challengeOffset = tlvReader.getDataOffset();
-        challengeLength = tlvReader.getLength();
-      } else if (tlvReader.match(CONST_TAG_AUTH_CHALLENGE_RESPONSE)) {
-        responseOffset = tlvReader.getDataOffset();
-        responseLength = tlvReader.getLength();
-      } else if (tlvReader.match(CONST_TAG_AUTH_WITNESS)) {
-        witnessOffset = tlvReader.getDataOffset();
-        witnessLength = tlvReader.getLength();
-      } else if (tlvReader.match(CONST_TAG_AUTH_EXPONENTIATION)) {
-        exponentiationOffset = tlvReader.getDataOffset();
-        exponentiationLength = tlvReader.getLength();
+      if (reader.match(CONST_TAG_AUTH_CHALLENGE)) {
+        challengeOffset = reader.getDataOffset();
+        challengeLength = reader.getLength();
+      } else if (reader.match(CONST_TAG_AUTH_CHALLENGE_RESPONSE)) {
+        responseOffset = reader.getDataOffset();
+        responseLength = reader.getLength();
+      } else if (reader.match(CONST_TAG_AUTH_WITNESS)) {
+        witnessOffset = reader.getDataOffset();
+        witnessLength = reader.getLength();
+      } else if (reader.match(CONST_TAG_AUTH_EXPONENTIATION)) {
+        exponentiationOffset = reader.getDataOffset();
+        exponentiationLength = reader.getLength();
       } else {
         // We have come across an unknown tag value. Other implementations ignore these and so shall we.
       }
-    } while (tlvReader.moveNext());
+    } while (reader.moveNext());
 
     // Restore the offset in the TLV object
-    tlvReader.setOffset(offset);
+    reader.setOffset(offset);
 
     //
     // STEP 2 - Process the appropriate GENERAL AUTHENTICATE case
@@ -1311,7 +1330,7 @@ public final class PIV {
     // CASE 6 - KEY ESTABLISHMENT SCHEME
     //
     // Description:
-    // TODO
+    // The client supplies a valid ECC public key and the CARD generates a shared secret key.
     //
     // Pre-Conditions:
     // 1) An EXPONENTIATION parameter is present with data
@@ -1576,8 +1595,8 @@ public final class PIV {
     // PRE-CONDITIONS
     //
 
-    // PRE-CONDITION 1 - The key MUST NOT have the MUTUAL_ONLY attribute set
-    if (key.hasAttribute(PIVKeyObject.ATTR_MUTUAL_ONLY)) {
+    // PRE-CONDITION 1 - The key MUST have the PERMIT INTERNAL attribute set
+    if (key.hasAttribute(PIVKeyObject.ATTR_PERMIT_INTERNAL)) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
     }
@@ -1634,7 +1653,7 @@ public final class PIV {
     //
 
     // > Client application requests a challenge from the PIV Card Application.
-
+    
     // Reset any other authentication intermediate state
     authenticateReset();
 
@@ -1648,6 +1667,12 @@ public final class PIV {
     // PRE-CONDITION 1 - The key must have the AUTHENTICATE role
     if (!key.hasRole(PIVKeyObject.ROLE_AUTHENTICATE)) {
       authenticateReset();
+      PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
+      ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+    }
+
+	// PRE-CONDITION 2 - The key MUST have the PERMIT EXTERNAL attribute set
+    if (key.hasAttribute(PIVKeyObject.ATTR_PERMIT_EXTERNAL)) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
     }
@@ -2029,6 +2054,7 @@ public final class PIV {
     // PRE-CONDITION 6 - The key must be an assymetric key (key pair)
     if (!(key instanceof PIVKeyObjectPKI)) {
       ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
+      return (short)0; // Keep static analyser happy
     }
 
     //
@@ -2087,23 +2113,27 @@ public final class PIV {
     // If the Global PIN is used by the PIV Card Application, then the above encoding, length,
     // padding, and enforcement of minimum PIN length requirements for the PIV Card Application
     // PIN shall apply to the Global PIN.
+    boolean padding = false;
     for (short i = 0; i < Config.PIN_LENGTH_MAX; i++) {
 
-      boolean padding = false;
-
-      if (i < Config.PIN_LENGTH_MIN) {
-        // Must be between '0' and '9' only
-        if (buffer[offset] < '0' || buffer[offset] > '9') return false;
-      } else {
-        if ((buffer[offset] < '0' || buffer[offset] > '9') && buffer[offset] != CONST_PAD)
-          return false;
+      if (padding) {      	
+      	// Once we have reached padding, all subsequent characters must be padding
+      	if (buffer[offset] != CONST_PAD) return false;	      
+      } else {      	
+        // Check if we have reached our padding
+        if (buffer[offset] == CONST_PAD) {
+      	    if (i < Config.PIN_LENGTH_MIN) {
+             // RULE: The minimum PIN length has not been reached
+             return false;
+      	    } else {
+			 padding = true;	      	    
+      	    }
+	    } else if (buffer[offset] < '0' || buffer[offset] > '9') {
+	      // RULE: The PIN character is not between '0' and '9' (inclusive)
+		  return false;
+	    }
       }
-
-      // If we have reached the padding, must continue to be padding
-      if (padding && buffer[offset] != CONST_PAD) return false;
-      if (buffer[offset] == CONST_PAD) {
-        if (i < Config.PIN_LENGTH_MIN) return false; // Make sure our PIN bytes are minimum length
-      }
+      
       offset++;
     }
 
@@ -2172,28 +2202,29 @@ public final class PIV {
     // the original buffer still contains the APDU header.
 
     // Initialise our TLV reader
-    tlvReader.init(scratch, (short) 0, length);
+    TLVReader reader = TLVReader.getInstance();
+    reader.init(scratch, (short) 0, length);
 
     //
     // PRE-CONDITIONS
     //
 
     // PRE-CONDITION 1 - The 'COMMAND' constructed tag must be present
-    if (!tlvReader.match(CONST_TAG_COMMAND)) {
+    if (!reader.match(CONST_TAG_COMMAND)) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
 
     // PRE-CONDITION 2 - The SEQUENCE length must be smaller than the APDU data length
-    if (tlvReader.getLength() > length) {
+    if (reader.getLength() > length) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
     }
 
     // Move into the constructed tag
-    tlvReader.moveInto();
+    reader.moveInto();
 
     // PRE-CONDITION 3 - The mandatory 'OPERATION' tag must be present with length 1
-    if (!tlvReader.match(CONST_TAG_OPERATION)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    byte operation = tlvReader.toByte();
+    if (!reader.match(CONST_TAG_OPERATION)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    byte operation = reader.toByte();
 
     // PRE-CONDITION 4 - The 'OPERATION' value must be set to the value CONST_OP_DATA or
     // CONST_OP_KEY
@@ -2201,60 +2232,60 @@ public final class PIV {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
 
     // Move to the next tag
-    tlvReader.moveNext();
+    reader.moveNext();
 
     // PRE-CONDITION 5 - The 'ID' value must be present with length 1
-    if (!tlvReader.match(CONST_TAG_ID)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    if (tlvReader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-    byte id = tlvReader.toByte();
+    if (!reader.match(CONST_TAG_ID)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    byte id = reader.toByte();
 
     // Move to the next tag
-    tlvReader.moveNext();
+    reader.moveNext();
 
     // PRE-CONDITION 6 - The 'MODE CONTACT' value must be present with length 1
-    if (!tlvReader.match(CONST_TAG_MODE_CONTACT)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    if (tlvReader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-    byte modeContact = tlvReader.toByte();
+    if (!reader.match(CONST_TAG_MODE_CONTACT)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    byte modeContact = reader.toByte();
 
     // Move to the next tag
-    tlvReader.moveNext();
+    reader.moveNext();
 
     // PRE-CONDITION 7 - The 'MODE CONTACTLESS' value must be present with length 1
-    if (!tlvReader.match(CONST_TAG_MODE_CONTACTLESS)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    if (tlvReader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-    byte modeContactless = tlvReader.toByte();
+    if (!reader.match(CONST_TAG_MODE_CONTACTLESS)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    byte modeContactless = reader.toByte();
 
     byte keyMechanism = ID_ALG_DEFAULT;
     byte keyRole = PIVKeyObject.ROLE_NONE;
     byte keyAttribute = PIVKeyObject.ATTR_NONE;
 
     // Move to the next tag
-    tlvReader.moveNext();
+    reader.moveNext();
 
     if (CONST_OP_KEY == operation) {
 
       // PRE-CONDITION 8a - If the operation is CONST_OP_KEY, then the 'KEY MECHANISM' tag
       //					 must be present with length 1
-      if (!tlvReader.match(CONST_TAG_KEY_MECHANISM)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      if (tlvReader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-      keyMechanism = tlvReader.toByte();
+      if (!reader.match(CONST_TAG_KEY_MECHANISM)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      keyMechanism = reader.toByte();
 
       // Move to the next tag
-      tlvReader.moveNext();
+      reader.moveNext();
 
       // PRE-CONDITION 8b - If the operation is CONST_OP_KEY, then the 'KEY ROLE' tag
       //					 must be present with length 1
 
-      if (!tlvReader.match(CONST_TAG_KEY_ROLE)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      if (tlvReader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-      keyRole = tlvReader.toByte();
+      if (!reader.match(CONST_TAG_KEY_ROLE)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      keyRole = reader.toByte();
 
       // PRE-CONDITION 8c - If the operation is CONST_OP_KEY, then the 'KEY ATTRIBUTE' tag
       //					 may be present with length 1
 
-      if (!tlvReader.match(CONST_TAG_KEY_ATTRIBUTE)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      if (tlvReader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-      keyAttribute = tlvReader.toByte();
+      if (!reader.match(CONST_TAG_KEY_ATTRIBUTE)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      keyAttribute = reader.toByte();
 
       // PRE-CONDITION 8c - If 'OPERATION' is set to CONST_OP_KEY, the key referenced by the 'id'
       //					  and 'mechanism' values must not already exist in the key store
@@ -2339,7 +2370,7 @@ public final class PIV {
     // PIN cases
     //
 
-    if (buffer[ISO7816.OFFSET_P2] == ID_KEY_PIN) {
+    if (id == ID_KEY_PIN) {
       if (!verifyPinFormat(ID_KEY_PIN, scratch, (short) 0, length)) {
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
       }
@@ -2350,8 +2381,7 @@ public final class PIV {
       // Done
       return;
     }
-
-    if (buffer[ISO7816.OFFSET_P2] == ID_KEY_PUK) {
+    else if (id == ID_KEY_PUK) {
       if (!verifyPinFormat(ID_KEY_PUK, scratch, (short) 0, length)) {
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
       }
@@ -2363,42 +2393,47 @@ public final class PIV {
       return;
     }
 
-    // PRE-CONDITION 1 - The key reference and mechanism must point to an existing key
-    PIVKeyObject key = cspPIV.selectKey(buffer[ISO7816.OFFSET_P2], buffer[ISO7816.OFFSET_P1]);
+    // PRE-CONDITION 1 - The key reference and mechanism MUST point to an existing key
+    PIVKeyObject key = cspPIV.selectKey(id, buffer[ISO7816.OFFSET_P1]);
     if (key == null) {
       // If any key reference value is specified that is not supported by the card, the PIV Card
       // Application
       // shall return the status word '6A 88'.
       ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
+      return; // Keep static analyser happy
     }
 
-    // PRE-CONDITION 2 - The key object must not have the ATTR_GENERATE_ONLY role attribute
-    if (key.hasAttribute(PIVKeyObject.ATTR_GENERATE_ONLY)) {
+    // PRE-CONDITION 2 - The key object MUST have the ATTR_IMPORTABLE attribute
+    if (!key.hasAttribute(PIVKeyObject.ATTR_IMPORTABLE)) {
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
+      return; // Keep static analyser happy
     }
 
     // Set up our TLV reader
-    tlvReader.init(scratch, (short) 0, length);
+    TLVReader reader = TLVReader.getInstance();
+    reader.init(scratch, (short) 0, length);
 
-    // PRE-CONDITION 2 - The parent tag must by of type SEQUENCE
-    if (!tlvReader.match(CONST_TAG_SEQUENCE)) {
+    // PRE-CONDITION 2 - The parent tag MUST be of type SEQUENCE
+    if (!reader.match(CONST_TAG_SEQUENCE)) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      return; // Keep static analyser happy
     }
 
-    // PRE-CONDITION 3 - The SEQUENCE length must be smaller than the APDU data length
-    if (tlvReader.getLength() > length) {
+    // PRE-CONDITION 3 - The SEQUENCE length MUST be smaller than the APDU data length
+    if (reader.getLength() > length) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      return; // Keep static analyser happy
     }
 
     // Move to the child tag
-    tlvReader.moveInto();
+    reader.moveInto();
 
     //
     // EXECUTION STEPS
     //
 
     key.updateElement(
-        tlvReader.getTag(), scratch, tlvReader.getDataOffset(), tlvReader.getLength());
+        reader.getTag(), scratch, reader.getDataOffset(), reader.getLength());
   }
 
   /**
