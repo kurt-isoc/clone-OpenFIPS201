@@ -80,18 +80,22 @@ public final class TLVReader {
   //
   public final Object[] dataPtr;
 
-  //
-  // TODO: Cache Tag, Length and ValueOffset values when find() completes, so that
-  // other subsequent calls can easily refer to them and there isn't so much redundant code
-  //
-  // private static final short CONTEXT_T					= (short)4;
-  // private static final short CONTEXT_L					= (short)5;
-  // private static final short CONTEXT_V					= (short)6;
   public final short[] context;
 
-  public TLVReader() {
+  private static TLVReader instance;
+
+  private TLVReader() {
     dataPtr = JCSystem.makeTransientObjectArray((short) 1, JCSystem.CLEAR_ON_DESELECT);
     context = JCSystem.makeTransientShortArray(LENGTH_CONTEXT, JCSystem.CLEAR_ON_DESELECT);
+  }
+
+  public static TLVReader getInstance() {
+
+    if (instance == null) {
+      instance = new TLVReader();
+    }
+
+    return instance;
   }
 
   /**
@@ -234,7 +238,7 @@ public final class TLVReader {
       if (!moveNext()) return false;
     }
 
-    // We didn't find the requested tag;
+    // We didn't find the requested tag
     return false;
   }
 
@@ -254,7 +258,7 @@ public final class TLVReader {
       if (!moveNext()) return false;
     }
 
-    // We didn't find the requested tag;
+    // We didn't find the requested tag
     return false;
   }
 
@@ -419,7 +423,6 @@ public final class TLVReader {
       return Util.getShort(data, offset);
     } else {
       ISOException.throwIt(ISO7816.SW_DATA_INVALID);
-      // TlvException.throwIt(TlvException.TAG_LENGTH_EXCEEDS_MAX);
       return (short) -1; // Dummy
     }
   }
@@ -437,8 +440,7 @@ public final class TLVReader {
       return data[getDataOffset()];
     } else {
       ISOException.throwIt(ISO7816.SW_DATA_INVALID);
-      // TlvException.throwIt(TlvException.TAG_LENGTH_EXCEEDS_MAX);
-      return (short) 0; // Dummy
+      return (byte) 0; // Keep compiler happy
     }
   }
 
