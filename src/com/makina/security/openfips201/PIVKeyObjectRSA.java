@@ -26,18 +26,16 @@
 
 package com.makina.security.openfips201;
 
+import javacard.framework.CardRuntimeException;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
-import javacard.framework.CardRuntimeException;
-
-import javacard.security.PublicKey;
-import javacard.security.PrivateKey;
-import javacard.security.RSAPrivateKey;
-import javacard.security.RSAPublicKey;
+import javacard.security.CryptoException;
 import javacard.security.KeyBuilder;
 import javacard.security.KeyPair;
-import javacard.security.CryptoException;
-
+import javacard.security.PrivateKey;
+import javacard.security.PublicKey;
+import javacard.security.RSAPrivateKey;
+import javacard.security.RSAPublicKey;
 import javacardx.crypto.Cipher;
 
 public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
@@ -52,16 +50,16 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   private static final byte ELEMENT_RSA_D = (byte) 0x83;
 
   // NOTE: Currently RSA CRT keys are not used, this is a placeholder
-  //private final byte ELEMENT_RSA_P = (byte) 0x91; // RSA Prime Exponent P
-  //private final byte ELEMENT_RSA_Q = (byte) 0x92; // RSA Prime Exponent Q
-  //private final byte ELEMENT_RSA_DP = (byte) 0x93; // RSA D mod P - 1
-  //private final byte ELEMENT_RSA_DQ = (byte) 0x94; // RSA D mod Q - 1
-  //private final byte ELEMENT_RSA_PQ = (byte) 0x95; // RSA Inverse Q
+  // private final byte ELEMENT_RSA_P = (byte) 0x91; // RSA Prime Exponent P
+  // private final byte ELEMENT_RSA_Q = (byte) 0x92; // RSA Prime Exponent Q
+  // private final byte ELEMENT_RSA_DP = (byte) 0x93; // RSA D mod P - 1
+  // private final byte ELEMENT_RSA_DQ = (byte) 0x94; // RSA D mod Q - 1
+  // private final byte ELEMENT_RSA_PQ = (byte) 0x95; // RSA Inverse Q
 
   // The list of ASN.1 tags for the public components
   private static final byte CONST_TAG_MODULUS = (byte) 0x81; // RSA - The modulus
   private static final byte CONST_TAG_EXPONENT = (byte) 0x82; // RSA - The public exponent
-  private static final short CONST_LENGTH_EXPONENT = (short)3; // RSA - The public exponent length
+  private static final short CONST_LENGTH_EXPONENT = (short) 3; // RSA - The public exponent length
 
   // Cipher implementations (static so they are shared with all instances of PIVKeyObjectRSA)
   private static Cipher cipher = null;
@@ -227,26 +225,26 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
     }
 
-	//
-	// IMPLEMENTATION NOTE:
-	// If you think the operation below looks insane, that's OK. This requires explanation.
-	// The PIV standard implements RSA digital signatures in a way that does not force you
-	// to choose a specific padding scheme (though they recomend PKCS#1.5 or OAEP). This means
-	// the client does not send the data to be signed, or even just the hash value. Instead,
-	// it sends a fully-formatted block including the hash and all padding.
-	//
-	// The problem here is that the Javacard Signature object can only sign in two ways.
-	// 1) Pass all data to update() and/or sign() which generates the hash, pads and encrypts.
-	// 2) Pass the hash to signPreComputedHash() which validates the length, pads and encrypts.
-	//
-	// Neither of the above is suited to taking a fully-formed block, so we are left with the 
-	// only remaining option, which is to perform a private key encryption operation, which makes
-	// us feel awkward and wrong.
-	//
-	// Yep, that's it.
-	//
-	cipher.init(privateKey, Cipher.MODE_ENCRYPT);
-	return cipher.doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
+    //
+    // IMPLEMENTATION NOTE:
+    // If you think the operation below looks insane, that's OK. This requires explanation.
+    // The PIV standard implements RSA digital signatures in a way that does not force you
+    // to choose a specific padding scheme (though they recomend PKCS#1.5 or OAEP). This means
+    // the client does not send the data to be signed, or even just the hash value. Instead,
+    // it sends a fully-formatted block including the hash and all padding.
+    //
+    // The problem here is that the Javacard Signature object can only sign in two ways.
+    // 1) Pass all data to update() and/or sign() which generates the hash, pads and encrypts.
+    // 2) Pass the hash to signPreComputedHash() which validates the length, pads and encrypts.
+    //
+    // Neither of the above is suited to taking a fully-formed block, so we are left with the
+    // only remaining option, which is to perform a private key encryption operation, which makes
+    // us feel awkward and wrong.
+    //
+    // Yep, that's it.
+    //
+    cipher.init(privateKey, Cipher.MODE_ENCRYPT);
+    return cipher.doFinal(inBuffer, inOffset, inLength, outBuffer, outOffset);
   }
 
   /* Implements RSA Key Transport, which is just a private decrypt operation */
@@ -295,7 +293,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
       // Exponent
       writer.writeTag(CONST_TAG_EXPONENT);
       writer.writeLength(CONST_LENGTH_EXPONENT);
-      
+
       outOffset = writer.getOffset();
       outOffset += ((RSAPublicKey) publicKey).getExponent(outBuffer, outOffset);
       writer.setOffset(outOffset); // Move the current position forward

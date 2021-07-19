@@ -26,11 +26,9 @@
 
 package com.makina.security.openfips201;
 
-import javacard.framework.Util;
-import javacard.framework.PIN;
-import javacard.framework.OwnerPIN;
 import javacard.framework.JCSystem;
-
+import javacard.framework.OwnerPIN;
+import javacard.framework.Util;
 import javacard.security.RandomData;
 
 @SuppressWarnings("unused")

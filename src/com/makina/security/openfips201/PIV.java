@@ -29,8 +29,8 @@ package com.makina.security.openfips201;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.JCSystem;
-import javacard.framework.Util;
 import javacard.framework.OwnerPIN;
+import javacard.framework.Util;
 
 /**
  * Implements FIPS201-2 according to NIST SP800-73-4.
@@ -58,8 +58,8 @@ public final class PIV {
   //
 
   // Data Objects
-  public static final byte ID_DATA_DISCOVERY = (byte)0x7E;
-  
+  public static final byte ID_DATA_DISCOVERY = (byte) 0x7E;
+
   // Keys
   public static final byte ID_ALG_DEFAULT = (byte) 0x00; // This maps to TDEA_3KEY
   public static final byte ID_ALG_TDEA_3KEY = (byte) 0x03;
@@ -72,7 +72,7 @@ public final class PIV {
   public static final byte ID_ALG_ECC_P384 = (byte) 0x14;
   public static final byte ID_ALG_ECC_CS2 = (byte) 0x27; // Secure Messaging - ECCP256+SHA256
   public static final byte ID_ALG_ECC_CS7 = (byte) 0x2E; // Secure Messaging - ECCP384+SHA384
-  
+
   // Verification Methods
   public static final byte ID_KEY_GLOBAL_PIN = (byte) 0x00;
   public static final byte ID_KEY_PIN = (byte) 0x80;
@@ -175,83 +175,82 @@ public final class PIV {
       cspPIV.cardPUK.update(Config.DEFAULT_PUK, (short) 0, (byte) Config.DEFAULT_PUK.length);
     }
 
+    //
+    // Test File System
+    //
+    createDataObject((byte) 0x01, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x02, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x03, (byte) 0x01, (byte) 0x01);
+    createDataObject((byte) 0x05, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x06, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x07, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x08, (byte) 0x01, (byte) 0x01);
+    createDataObject((byte) 0x09, (byte) 0x01, (byte) 0x01);
+    createDataObject((byte) 0x0A, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x0B, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x0C, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x0D, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x0E, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x0F, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x10, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x11, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x12, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x13, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x14, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x15, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x16, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x17, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x18, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x19, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x1A, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x1B, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x1C, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x1D, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x1E, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x1F, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x20, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x21, (byte) 0x01, (byte) 0x01);
+    createDataObject((byte) 0x61, (byte) 0x7F, (byte) 0x7F);
+    createDataObject((byte) 0x7E, (byte) 0x7F, (byte) 0x7F);
 
-	//
-	// Test File System
-	//	
-	createDataObject((byte)0x01, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x02, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x03, (byte)0x01, (byte)0x01);
-	createDataObject((byte)0x05, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x06, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x07, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x08, (byte)0x01, (byte)0x01);
-	createDataObject((byte)0x09, (byte)0x01, (byte)0x01);
-	createDataObject((byte)0x0A, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x0B, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x0C, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x0D, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x0E, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x0F, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x10, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x11, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x12, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x13, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x14, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x15, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x16, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x17, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x18, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x19, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x1A, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x1B, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x1C, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x1D, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x1E, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x1F, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x20, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x21, (byte)0x01, (byte)0x01);
-	createDataObject((byte)0x61, (byte)0x7F, (byte)0x7F);
-	createDataObject((byte)0x7E, (byte)0x7F, (byte)0x7F);
-
-	cspPIV.createKey((byte)0x82, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x83, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x84, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x85, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x86, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x87, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x88, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x89, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x8A, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x8B, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x8C, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x8D, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x8E, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x8F, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x90, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x91, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x92, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x93, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x94, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x95, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x9A, (byte)0x01, (byte)0x00, (byte)0x11, (byte)0x02, (byte)0x10);
-	cspPIV.createKey((byte)0x9A, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x02, (byte)0x10);
-	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x03, (byte)0x01, (byte)0x01);
-	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x08, (byte)0x01, (byte)0x01);
-	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x0A, (byte)0x01, (byte)0x01);
-	cspPIV.createKey((byte)0x9B, (byte)0x7F, (byte)0x00, (byte)0x0C, (byte)0x01, (byte)0x01);
-	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x00, (byte)0x11, (byte)0x02, (byte)0x10);
-	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x00, (byte)0x14, (byte)0x02, (byte)0x10);
-	cspPIV.createKey((byte)0x9C, (byte)0x02, (byte)0x02, (byte)0x07, (byte)0x02, (byte)0x10);
-	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x00, (byte)0x11, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x00, (byte)0x14, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x9D, (byte)0x01, (byte)0x01, (byte)0x07, (byte)0x08, (byte)0x10);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x03, (byte)0x01, (byte)0x00);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x07, (byte)0x02, (byte)0x10);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x08, (byte)0x01, (byte)0x00);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x0A, (byte)0x01, (byte)0x00);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x0C, (byte)0x01, (byte)0x00);
-	cspPIV.createKey((byte)0x9E, (byte)0x7F, (byte)0x7F, (byte)0x11, (byte)0x02, (byte)0x10);
+    cspPIV.createKey((byte) 0x82, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x83, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x84, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x85, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x86, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x87, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x88, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x89, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x8A, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x8B, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x8C, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x8D, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x8E, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x8F, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x90, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x91, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x92, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x93, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x94, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x95, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9A, (byte) 0x01, (byte) 0x00, (byte) 0x11, (byte) 0x02, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9A, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x02, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9B, (byte) 0x7F, (byte) 0x00, (byte) 0x03, (byte) 0x01, (byte) 0x01);
+    cspPIV.createKey((byte) 0x9B, (byte) 0x7F, (byte) 0x00, (byte) 0x08, (byte) 0x01, (byte) 0x01);
+    cspPIV.createKey((byte) 0x9B, (byte) 0x7F, (byte) 0x00, (byte) 0x0A, (byte) 0x01, (byte) 0x01);
+    cspPIV.createKey((byte) 0x9B, (byte) 0x7F, (byte) 0x00, (byte) 0x0C, (byte) 0x01, (byte) 0x01);
+    cspPIV.createKey((byte) 0x9C, (byte) 0x02, (byte) 0x00, (byte) 0x11, (byte) 0x02, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9C, (byte) 0x02, (byte) 0x00, (byte) 0x14, (byte) 0x02, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9C, (byte) 0x02, (byte) 0x02, (byte) 0x07, (byte) 0x02, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9D, (byte) 0x01, (byte) 0x00, (byte) 0x11, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9D, (byte) 0x01, (byte) 0x00, (byte) 0x14, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9D, (byte) 0x01, (byte) 0x01, (byte) 0x07, (byte) 0x08, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x03, (byte) 0x01, (byte) 0x00);
+    cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x07, (byte) 0x02, (byte) 0x10);
+    cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x08, (byte) 0x01, (byte) 0x00);
+    cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x0A, (byte) 0x01, (byte) 0x00);
+    cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x0C, (byte) 0x01, (byte) 0x00);
+    cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x11, (byte) 0x02, (byte) 0x10);
   }
 
   /**
@@ -380,19 +379,19 @@ public final class PIV {
       default:
         // Unsupported length supplied
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-		return (short)0; // Keep static analyser happy
+        return (short) 0; // Keep static analyser happy
     }
 
     PIVDataObject data = findDataObject(id);
     if (data == null) {
       ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
-      return (short)0; // Keep static analyser happy
+      return (short) 0; // Keep static analyser happy
     }
 
     // PRE-CONDITION 2 - The access rules must be satisfied for the requested object
     if (!cspPIV.checkAccessModeObject(data)) {
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-      return (short)0; // Keep static analyser happy
+      return (short) 0; // Keep static analyser happy
     }
 
     // PRE-CONDITION 3 - The requested object must be initialised with data
@@ -408,12 +407,12 @@ public final class PIV {
       //
       if (Config.FEATURE_ERROR_ON_EMPTY_DATA_OBJECT) {
         ISOException.throwIt(ISO7816.SW_FILE_NOT_FOUND);
-		return (short)0; // Keep static analyser happy
+        return (short) 0; // Keep static analyser happy
       } else {
         // We just return an OK response with no data
         ISOException.throwIt(ISO7816.SW_NO_ERROR);
-		return (short)0; // Keep static analyser happy
-     }
+        return (short) 0; // Keep static analyser happy
+      }
     }
 
     //
@@ -482,7 +481,7 @@ public final class PIV {
         //
       case CONST_TAG_BIOMETRIC_1:
         if (buffer[(short) (offset + 1)] != CONST_TAG_BIOMETRIC_2) {
-          ISOException.throwIt(SW_REFERENCE_NOT_FOUND);	        
+          ISOException.throwIt(SW_REFERENCE_NOT_FOUND);
         }
         id = CONST_TAG_BIOMETRIC_2; // Store it as our object ID
         break;
@@ -511,9 +510,9 @@ public final class PIV {
           return; // Keep static analyser happy
         }
         break;
-        
-	default:
-		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+
+      default:
+        ISOException.throwIt(ISO7816.SW_WRONG_DATA);
         return; // Keep static analyser happy
     }
 
@@ -856,10 +855,10 @@ public final class PIV {
     // criteria in Section 2.4.3, then the PIV Card Application shall return the status word '6A
     // 80'.
 
-	// Ensure the supplied length is exactly two PIN maximum lengths
-	if (length != ((short)2 * Config.PIN_LENGTH_MAX)) {
-      ISOException.throwIt(ISO7816.SW_WRONG_DATA);		
-	}
+    // Ensure the supplied length is exactly two PIN maximum lengths
+    if (length != ((short) 2 * Config.PIN_LENGTH_MAX)) {
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+    }
 
     // Verify the authentication reference data (old PIN) format
     if (!verifyPinFormat(id, buffer, offset, Config.PIN_LENGTH_MAX)) {
@@ -936,7 +935,7 @@ public final class PIV {
     // PRE-CONDITION 3 - The supplied length must equal the PUK + NEW PIN lengths
     // If the current value of the PUK's retry counter is zero, then the PIN's retry counter shall
     // not be reset and the PIV Card Application shall return the status word '69 83'.
-    if (length != ((short)2 * Config.PIN_LENGTH_MAX)) ISOException.throwIt(SW_OPERATION_BLOCKED);
+    if (length != ((short) 2 * Config.PIN_LENGTH_MAX)) ISOException.throwIt(SW_OPERATION_BLOCKED);
 
     // PRE-CONDITION 3 - The PUK must not be blocked
     // If the current value of the PUK's retry counter is zero, then the PIN's retry counter shall
@@ -1071,7 +1070,7 @@ public final class PIV {
       cspPIV.setPINAlways(false); // Clear the PIN ALWAYS flag
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
-      return (short)0; // Keep compiler happy
+      return (short) 0; // Keep compiler happy
     }
 
     // PRE-CONDITION 2 - The access rules must be satisfied for the requested key
@@ -1079,21 +1078,21 @@ public final class PIV {
     if (!cspPIV.checkAccessModeObject(key)) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
-      return (short)0; // Keep compiler happy
+      return (short) 0; // Keep compiler happy
     }
 
     // PRE-CONDITION 3 - The key's private or secret values must have been set
     if (!key.isInitialised()) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
-      return (short)0; // Keep compiler happy
+      return (short) 0; // Keep compiler happy
     }
 
     // PRE-CONDITION 4 - The Dynamic Authentication Template tag must be present in the data
     if (!reader.find(CONST_TAG_AUTH_TEMPLATE)) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_DATA_INVALID);
-      return (short)0; // Keep compiler happy
+      return (short) 0; // Keep compiler happy
     }
 
     // Move into the content of the template
@@ -1134,7 +1133,8 @@ public final class PIV {
         exponentiationOffset = reader.getDataOffset();
         exponentiationLength = reader.getLength();
       } else {
-        // We have come across an unknown tag value. Other implementations ignore these and so shall we.
+        // We have come across an unknown tag value. Other implementations ignore these and so shall
+        // we.
       }
     } while (reader.moveNext());
 
@@ -1410,7 +1410,7 @@ public final class PIV {
     // seem like a pain but it does save an array copy and prevents use of the APDU buffer, so
     // we think it's worth it.
     //
-    
+
     //
     // MECHANISM CASES:
     // ECC256  - Challenge block is 32 bytes and Signature is 64-70 bytes (single-byte length)
@@ -1419,64 +1419,63 @@ public final class PIV {
     // RSA2048 - Challenge block is 256 bytes and Signature is 256 bytes (triple-byte length)
     //
     // NOTES:
-    // - In all cases, the challenge length must be equal to the key/block length 
+    // - In all cases, the challenge length must be equal to the key/block length
     // - Given the above cases, if the challenge length is less than 127, we can categorise it
     //   as a TLV short form length.
     // - RSA1024 should not be permitted for this operation, but that should be restricted
     //   using key roles rather than here.
 
-	// Construct the TLV response and RESPONSE tag
+    // Construct the TLV response and RESPONSE tag
     TLVWriter writer = TLVWriter.getInstance();
-	writer.init(scratch, (short)0, challengeLength, CONST_TAG_AUTH_TEMPLATE);		
+    writer.init(scratch, (short) 0, challengeLength, CONST_TAG_AUTH_TEMPLATE);
     writer.writeTag(CONST_TAG_AUTH_CHALLENGE_RESPONSE);
 
-	short offset = writer.getOffset();
-	if (challengeLength <= TLVWriter.LENGTH_1BYTE_MAX) {
-		// Single-byte form
-		offset += (short)1;
-	} else if (challengeLength <= TLVWriter.LENGTH_2BYTE_MAX) {
-		// Double-byte form
-		offset += (short)2;
-	} else {
-		// Triple-byte form
-		offset += (short)3;
-	}
+    short offset = writer.getOffset();
+    if (challengeLength <= TLVWriter.LENGTH_1BYTE_MAX) {
+      // Single-byte form
+      offset += (short) 1;
+    } else if (challengeLength <= TLVWriter.LENGTH_2BYTE_MAX) {
+      // Double-byte form
+      offset += (short) 2;
+    } else {
+      // Triple-byte form
+      offset += (short) 3;
+    }
 
-	
     // Sign the CHALLENGE data to the location specified by 'offset'
-	short length;
+    short length;
     try {
       length = key.sign(scratch, challengeOffset, challengeLength, scratch, offset);
     } catch (Exception e) {
       authenticateReset();
       // Presume that we have a problem with the input data, instead of throwing 6F00.
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      return (short)0; // Keep static analyser happy
+      return (short) 0; // Keep static analyser happy
     }
 
-	//
-	// The writer object is still pointing to where the length needs to be written, so
-	// we can write the length
-	//
-	
+    //
+    // The writer object is still pointing to where the length needs to be written, so
+    // we can write the length
+    //
+
     writer.writeLength(length);
-    
-	// Sanity check that the writer offset is now at the same point we wrote our data. If not,
-	// something went wrong in our length estimation! This shouldn't happen.
-	if (writer.getOffset() != offset) {
-		authenticateReset();
-		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-		return (short)0; // Keep static analyser happy
-	}
-	
-	// Now we can move past the signature data
-	writer.move(length);
+
+    // Sanity check that the writer offset is now at the same point we wrote our data. If not,
+    // something went wrong in our length estimation! This shouldn't happen.
+    if (writer.getOffset() != offset) {
+      authenticateReset();
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      return (short) 0; // Keep static analyser happy
+    }
+
+    // Now we can move past the signature data
+    writer.move(length);
 
     // Finalise the TLV object and get the entire data object length
     length = writer.finish();
 
     // Set up the outgoing command chain
-    chainBuffer.setOutgoing(scratch, (short)0, length, true);
+    chainBuffer.setOutgoing(scratch, (short) 0, length, true);
 
     // Done, return the length of data we are sending
     return length;
@@ -1519,66 +1518,66 @@ public final class PIV {
     // seem like a pain but it does save an array copy and prevents use of the APDU buffer, so
     // we think it's worth it.
     //
-    
+
     //
     // MECHANISM CASES:
     // RSA1024 - Challenge block is 128 bytes and Signature is 128 bytes (double-byte length)
     // RSA2048 - Challenge block is 256 bytes and Signature is 256 bytes (triple-byte length)
     //
     // NOTES:
-    // - In all cases, the challenge length must be equal to the key/block length 
+    // - In all cases, the challenge length must be equal to the key/block length
     // - ECC keys are not valid for this case
 
-	// Construct the TLV response and RESPONSE tag
+    // Construct the TLV response and RESPONSE tag
     TLVWriter writer = TLVWriter.getInstance();
-	writer.init(scratch, (short)0, challengeLength, CONST_TAG_AUTH_TEMPLATE);		
+    writer.init(scratch, (short) 0, challengeLength, CONST_TAG_AUTH_TEMPLATE);
     writer.writeTag(CONST_TAG_AUTH_CHALLENGE_RESPONSE);
 
-	short offset = writer.getOffset();
-	if (challengeLength <= TLVWriter.LENGTH_1BYTE_MAX) {
-		// Single-byte form
-		offset += (short)1;
-	} else if (challengeLength <= TLVWriter.LENGTH_2BYTE_MAX) {
-		// Double-byte form
-		offset += (short)2;
-	} else {
-		// Triple-byte form
-		offset += (short)3;
-	}
-	
+    short offset = writer.getOffset();
+    if (challengeLength <= TLVWriter.LENGTH_1BYTE_MAX) {
+      // Single-byte form
+      offset += (short) 1;
+    } else if (challengeLength <= TLVWriter.LENGTH_2BYTE_MAX) {
+      // Double-byte form
+      offset += (short) 2;
+    } else {
+      // Triple-byte form
+      offset += (short) 3;
+    }
+
     // Decrypt the CHALLENGE data
-	short length;
+    short length;
     try {
       length = key.keyAgreement(scratch, challengeOffset, challengeLength, scratch, offset);
     } catch (Exception e) {
       authenticateReset();
       // Presume that we have a problem with the input data, instead of throwing 6F00.
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      return (short)0; // Keep static analyser happy
+      return (short) 0; // Keep static analyser happy
     }
 
-	//
-	// The writer object is still pointing to where the length needs to be written, so
-	// we can write the length
-	//	
+    //
+    // The writer object is still pointing to where the length needs to be written, so
+    // we can write the length
+    //
     writer.writeLength(length);
-    
-	// Sanity check that the writer offset is now at the same point we wrote our data. If not,
-	// something went wrong in our length estimation! This shouldn't happen.
-	if (writer.getOffset() != offset) {
-		authenticateReset();
-		ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-		return (short)0; // Keep static analyser happy
-	}
-	
-	// Now we can move past the decrypted data
-	writer.move(length);
+
+    // Sanity check that the writer offset is now at the same point we wrote our data. If not,
+    // something went wrong in our length estimation! This shouldn't happen.
+    if (writer.getOffset() != offset) {
+      authenticateReset();
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      return (short) 0; // Keep static analyser happy
+    }
+
+    // Now we can move past the decrypted data
+    writer.move(length);
 
     // Finalise the TLV object and get the entire data object length
     length = writer.finish();
 
     // Set up the outgoing command chain
-    chainBuffer.setOutgoing(scratch, (short)0, length, true);
+    chainBuffer.setOutgoing(scratch, (short) 0, length, true);
 
     // Done, return the length of data we are sending
     return length;
@@ -1624,7 +1623,7 @@ public final class PIV {
     writer.writeLength(challengeLength);
 
     // Encrypt the CHALLENGE data
-	short offset = writer.getOffset();
+    short offset = writer.getOffset();
     try {
       offset += key.encrypt(scratch, challengeOffset, challengeLength, scratch, offset);
     } catch (Exception e) {
@@ -1653,7 +1652,7 @@ public final class PIV {
     //
 
     // > Client application requests a challenge from the PIV Card Application.
-    
+
     // Reset any other authentication intermediate state
     authenticateReset();
 
@@ -1671,7 +1670,7 @@ public final class PIV {
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
     }
 
-	// PRE-CONDITION 2 - The key MUST have the PERMIT EXTERNAL attribute set
+    // PRE-CONDITION 2 - The key MUST have the PERMIT EXTERNAL attribute set
     if (key.hasAttribute(PIVKeyObject.ATTR_PERMIT_EXTERNAL)) {
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
@@ -1757,11 +1756,7 @@ public final class PIV {
 
     // Compare the authentication statuses
     if (Util.arrayCompare(
-            scratch,
-            responseOffset,
-            authenticationContext,
-            OFFSET_AUTH_CHALLENGE,
-            responseLength)
+            scratch, responseOffset, authenticationContext, OFFSET_AUTH_CHALLENGE, responseLength)
         != 0) {
       authenticateReset();
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1822,7 +1817,7 @@ public final class PIV {
     short offset = writer.getOffset();
     offset += key.encrypt(authenticationContext, OFFSET_AUTH_CHALLENGE, length, scratch, offset);
     writer.setOffset(offset); // Update the TLV offset value
-	
+
     // Finalise the TLV object and get the entire data object length
     length = writer.finish();
 
@@ -1889,11 +1884,7 @@ public final class PIV {
 
     // Compare the authentication statuses
     if (Util.arrayCompare(
-            scratch,
-            witnessOffset,
-            authenticationContext,
-            OFFSET_AUTH_CHALLENGE,
-            witnessLength)
+            scratch, witnessOffset, authenticationContext, OFFSET_AUTH_CHALLENGE, witnessLength)
         != 0) {
       authenticateReset();
       PIVSecurityProvider.zeroise(scratch, (short) 0, LENGTH_SCRATCH);
@@ -1972,7 +1963,9 @@ public final class PIV {
     writer.writeLength(key.getKeyLengthBytes());
 
     // Compute the shared secret
-    length = key.keyAgreement(scratch, exponentiationOffset, exponentiationLength, scratch, writer.getOffset());
+    length =
+        key.keyAgreement(
+            scratch, exponentiationOffset, exponentiationLength, scratch, writer.getOffset());
 
     // Move to the end of the key agreement output data
     writer.move(length);
@@ -2054,7 +2047,7 @@ public final class PIV {
     // PRE-CONDITION 6 - The key must be an assymetric key (key pair)
     if (!(key instanceof PIVKeyObjectPKI)) {
       ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
-      return (short)0; // Keep static analyser happy
+      return (short) 0; // Keep static analyser happy
     }
 
     //
@@ -2116,24 +2109,24 @@ public final class PIV {
     boolean padding = false;
     for (short i = 0; i < Config.PIN_LENGTH_MAX; i++) {
 
-      if (padding) {      	
-      	// Once we have reached padding, all subsequent characters must be padding
-      	if (buffer[offset] != CONST_PAD) return false;	      
-      } else {      	
+      if (padding) {
+        // Once we have reached padding, all subsequent characters must be padding
+        if (buffer[offset] != CONST_PAD) return false;
+      } else {
         // Check if we have reached our padding
         if (buffer[offset] == CONST_PAD) {
-      	    if (i < Config.PIN_LENGTH_MIN) {
-             // RULE: The minimum PIN length has not been reached
-             return false;
-      	    } else {
-			 padding = true;	      	    
-      	    }
-	    } else if (buffer[offset] < '0' || buffer[offset] > '9') {
-	      // RULE: The PIN character is not between '0' and '9' (inclusive)
-		  return false;
-	    }
+          if (i < Config.PIN_LENGTH_MIN) {
+            // RULE: The minimum PIN length has not been reached
+            return false;
+          } else {
+            padding = true;
+          }
+        } else if (buffer[offset] < '0' || buffer[offset] > '9') {
+          // RULE: The PIN character is not between '0' and '9' (inclusive)
+          return false;
+        }
       }
-      
+
       offset++;
     }
 
@@ -2374,14 +2367,13 @@ public final class PIV {
       if (!verifyPinFormat(ID_KEY_PIN, scratch, (short) 0, length)) {
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
       }
- 
+
       // Update the PIN
       cspPIV.cardPIN.update(scratch, (short) 0, (byte) length);
 
       // Done
       return;
-    }
-    else if (id == ID_KEY_PUK) {
+    } else if (id == ID_KEY_PUK) {
       if (!verifyPinFormat(ID_KEY_PUK, scratch, (short) 0, length)) {
         ISOException.throwIt(ISO7816.SW_WRONG_DATA);
       }
@@ -2432,8 +2424,7 @@ public final class PIV {
     // EXECUTION STEPS
     //
 
-    key.updateElement(
-        reader.getTag(), scratch, reader.getDataOffset(), reader.getLength());
+    key.updateElement(reader.getTag(), scratch, reader.getDataOffset(), reader.getLength());
   }
 
   /**

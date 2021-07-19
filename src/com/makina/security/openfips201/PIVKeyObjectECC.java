@@ -26,21 +26,19 @@
 
 package com.makina.security.openfips201;
 
+import javacard.framework.CardRuntimeException;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
-import javacard.framework.CardRuntimeException;
-
-import javacard.security.PublicKey;
-import javacard.security.PrivateKey;
+import javacard.security.CryptoException;
 import javacard.security.ECPrivateKey;
 import javacard.security.ECPublicKey;
 import javacard.security.KeyAgreement;
-import javacard.security.Signature;
-import javacard.security.MessageDigest;
 import javacard.security.KeyBuilder;
 import javacard.security.KeyPair;
-import javacard.security.CryptoException;
-
+import javacard.security.MessageDigest;
+import javacard.security.PrivateKey;
+import javacard.security.PublicKey;
+import javacard.security.Signature;
 import javacardx.crypto.Cipher;
 
 /** Provides functionality for ECC PIV key objects */
@@ -183,19 +181,17 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   @Override
   public void updateElement(byte element, byte[] buffer, short offset, short length) {
 
-
     switch (element) {
-    	
       case ELEMENT_ECC_POINT:
         if (length != marshaledPubKeyLen) {
           ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-    	  return; // Keep static analyser happy
+          return; // Keep static analyser happy
         }
 
         // Only uncompressed points are supported
         if (buffer[offset] != CONST_POINT_UNCOMPRESSED) {
           ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    	  return; // Keep static analyser happy
+          return; // Keep static analyser happy
         }
 
         allocatePublic();
@@ -206,7 +202,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
       case ELEMENT_ECC_SECRET:
         if (length != getKeyLengthBytes()) {
           ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-		  return; // Keep static analyser happy
+          return; // Keep static analyser happy
         }
 
         allocatePrivate();

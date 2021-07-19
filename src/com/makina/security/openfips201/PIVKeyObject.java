@@ -105,7 +105,7 @@ public abstract class PIVKeyObject extends PIVObject {
   // RSA: Supported
   // ECC: Supported
   public static final byte ATTR_IMPORTABLE = (byte) 0x10;
-  
+
   //
   // Common Key Elements
   //
@@ -152,27 +152,27 @@ public abstract class PIVKeyObject extends PIVObject {
       case PIV.ID_ALG_AES_128:
       case PIV.ID_ALG_AES_192:
       case PIV.ID_ALG_AES_256:
-      	// Attribute Check - The IMPORTABLE attribute must be set for symmetric keys
-      	if ((attributes & ATTR_IMPORTABLE) == (byte)0) {
-	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      	}
+        // Attribute Check - The IMPORTABLE attribute must be set for symmetric keys
+        if ((attributes & ATTR_IMPORTABLE) == (byte) 0) {
+          ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        }
         key = new PIVKeyObjectSYM(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 
       case PIV.ID_ALG_RSA_1024:
       case PIV.ID_ALG_RSA_2048:
-      	// Attribute Check - The ADMIN attribute MUST NOT be set for assymetric keys
-      	if ((attributes & ATTR_ADMIN) != (byte)0) {
-	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      	}
-      	// Attribute Check - The INTERNAL attribute MUST NOT be set for assymetric keys
-      	if ((attributes & ATTR_PERMIT_INTERNAL) != (byte)0) {
-	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      	}
-      	// Attribute Check - The EXTERNAL attribute MUST NOT be set for assymetric keys
-      	if ((attributes & ATTR_PERMIT_EXTERNAL) != (byte)0) {
-	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      	}
+        // Attribute Check - The ADMIN attribute MUST NOT be set for assymetric keys
+        if ((attributes & ATTR_ADMIN) != (byte) 0) {
+          ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        }
+        // Attribute Check - The INTERNAL attribute MUST NOT be set for assymetric keys
+        if ((attributes & ATTR_PERMIT_INTERNAL) != (byte) 0) {
+          ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        }
+        // Attribute Check - The EXTERNAL attribute MUST NOT be set for assymetric keys
+        if ((attributes & ATTR_PERMIT_EXTERNAL) != (byte) 0) {
+          ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        }
         key = new PIVKeyObjectRSA(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 
@@ -180,15 +180,15 @@ public abstract class PIVKeyObject extends PIVObject {
       case PIV.ID_ALG_ECC_P384:
       case PIV.ID_ALG_ECC_CS2:
       case PIV.ID_ALG_ECC_CS7:
-      	if ((attributes & ATTR_ADMIN) != (byte)0) {
-	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      	}
-      	if ((attributes & ATTR_PERMIT_INTERNAL) != (byte)0) {
-	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      	}
-      	if ((attributes & ATTR_PERMIT_EXTERNAL) != (byte)0) {
-	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-      	}
+        if ((attributes & ATTR_ADMIN) != (byte) 0) {
+          ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        }
+        if ((attributes & ATTR_PERMIT_INTERNAL) != (byte) 0) {
+          ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        }
+        if ((attributes & ATTR_PERMIT_EXTERNAL) != (byte) 0) {
+          ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+        }
         key = new PIVKeyObjectECC(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 

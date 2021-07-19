@@ -28,12 +28,11 @@ package com.makina.security.openfips201;
 
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
-
-import javacard.security.KeyBuilder;
-import javacard.security.CryptoException;
-import javacard.security.SecretKey;
-import javacard.security.DESKey;
 import javacard.security.AESKey;
+import javacard.security.CryptoException;
+import javacard.security.DESKey;
+import javacard.security.KeyBuilder;
+import javacard.security.SecretKey;
 import javacardx.crypto.Cipher;
 
 /** Provides functionality for symmetric PIV key objects */
@@ -216,19 +215,20 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
   public short encrypt(
       byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
 
-	// PRE-CONDITION 1 - The length must be equal to the block length
-	Assert.isEqual(inLength, getBlockLength());
-    
+    // PRE-CONDITION 1 - The length must be equal to the block length
+    Assert.isEqual(inLength, getBlockLength());
+
     // PRE-CONDITION 2 - If the input and output buffers are equal, we must not clobber the input
     // From the Javacard Cipher documentation:
     // When using block-aligned data (multiple of block size), if the input buffer, inBuff and
-    // the output buffer, outBuff are the same array, then the output data area must not 
-    // partially overlap the input data area such that the input data is modified before it is 
-    // used; if inBuff==outBuff and inOffset < outOffset < inOffset+inLength, incorrect output 
+    // the output buffer, outBuff are the same array, then the output data area must not
+    // partially overlap the input data area such that the input data is modified before it is
+    // used; if inBuff==outBuff and inOffset < outOffset < inOffset+inLength, incorrect output
     // may result.
-    Assert.isFalse((inBuffer == outBuffer) && 
-				   (inOffset < outOffset) && 
-				   (outOffset < (short)(inOffset + inLength)));
+    Assert.isFalse(
+        (inBuffer == outBuffer)
+            && (inOffset < outOffset)
+            && (outOffset < (short) (inOffset + inLength)));
 
     Cipher cipher;
 

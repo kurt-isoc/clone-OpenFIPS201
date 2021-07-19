@@ -127,12 +127,12 @@ public final class OpenFIPS201 extends Applet {
       secureChannel = GPSystem.getSecureChannel();
     }
 
-    //c;\
-    
+    // c;\
+
     // Handle incoming APDUs
     //
     // Process any commands that are wrapped by a GlobalPlatform Secure Channel
-    byte media = (byte)(APDU.getProtocol() & APDU.PROTOCOL_MEDIA_MASK);
+    byte media = (byte) (APDU.getProtocol() & APDU.PROTOCOL_MEDIA_MASK);
 
     final boolean contactless =
         (media == APDU.PROTOCOL_MEDIA_CONTACTLESS_TYPE_A
@@ -477,20 +477,20 @@ public final class OpenFIPS201 extends Applet {
             || buffer[ISO7816.OFFSET_P2] == PIV.ID_KEY_PIN
             || buffer[ISO7816.OFFSET_P2] == PIV.ID_KEY_PUK);
 
-    // PRE-CONDITION 2 - If the P2 value is set to one of the standard PIN references but the P1									  
-    // value is set to CONST_P1_ADMIN, we consider this an administrative command for the purposes 
+    // PRE-CONDITION 2 - If the P2 value is set to one of the standard PIN references but the P1
+    // value is set to CONST_P1_ADMIN, we consider this an administrative command for the purposes
     // of changing the PINs over SCP
     if (isStandard && buffer[ISO7816.OFFSET_P1] == CONST_P1_ADMIN) {
       isStandard = false;
     }
 
-    // PRE-CONDITION 3 - If the P2 value is set to one of the standard PIN references, the P1 value					
+    // PRE-CONDITION 3 - If the P2 value is set to one of the standard PIN references, the P1 value
     // must be equal to the constant CONST_P1
     if (isStandard && buffer[ISO7816.OFFSET_P1] != CONST_P1) {
       ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
     }
 
-    // PRE-CONDITION 4 - If the P2 value is set to one of the standard PIN references, the LC						  
+    // PRE-CONDITION 4 - If the P2 value is set to one of the standard PIN references, the LC
     // (length) value must be equal to the constant CONST_LC
     if (isStandard && length != CONST_LC) {
       ISOException.throwIt(ISO7816.SW_WRONG_DATA);
