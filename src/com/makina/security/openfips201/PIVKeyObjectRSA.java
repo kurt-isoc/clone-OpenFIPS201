@@ -52,11 +52,11 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   private static final byte ELEMENT_RSA_D = (byte) 0x83;
 
   // NOTE: Currently RSA CRT keys are not used, this is a placeholder
-  // private final byte ELEMENT_RSA_P = (byte) 0x84; // RSA Prime Exponent P
-  // private final byte ELEMENT_RSA_Q = (byte) 0x85; // RSA Prime Exponent Q
-  // private final byte ELEMENT_RSA_DP = (byte) 0x86; // RSA D mod P - 1
-  // private final byte ELEMENT_RSA_DQ = (byte) 0x87; // RSA D mod Q - 1
-  // private final byte ELEMENT_RSA_PQ = (byte) 0x88; // RSA Inverse Q
+  //private final byte ELEMENT_RSA_P = (byte) 0x91; // RSA Prime Exponent P
+  //private final byte ELEMENT_RSA_Q = (byte) 0x92; // RSA Prime Exponent Q
+  //private final byte ELEMENT_RSA_DP = (byte) 0x93; // RSA D mod P - 1
+  //private final byte ELEMENT_RSA_DQ = (byte) 0x94; // RSA D mod Q - 1
+  //private final byte ELEMENT_RSA_PQ = (byte) 0x95; // RSA Inverse Q
 
   // The list of ASN.1 tags for the public components
   private static final byte CONST_TAG_MODULUS = (byte) 0x81; // RSA - The modulus
@@ -66,7 +66,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   // Cipher implementations (static so they are shared with all instances of PIVKeyObjectRSA)
   private static Cipher cipher = null;
 
-  public PIVKeyObjectRSA(
+  protected PIVKeyObjectRSA(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
   }

@@ -86,6 +86,7 @@ public final class OpenFIPS201 extends Applet {
     new OpenFIPS201().register(bArray, (short) (bOffset + 1), bArray[bOffset]);
   }
 
+  @Override
   public void deselect() {
 
     // Reset any security domain session (see resetSecurity() documentation)
@@ -292,7 +293,7 @@ public final class OpenFIPS201 extends Applet {
      */
 
     // STEP 1 - Call the PIV 'SELECT' command in all cases to handle the PIV SELECT rules
-    length = piv.select(buffer, (short) 0, length);
+    length = piv.select(buffer, (short) 0);
 
     // STEP 2 - Check the ne value
     if (ne < length) {
@@ -316,7 +317,6 @@ public final class OpenFIPS201 extends Applet {
     final byte P2 = (byte) 0xFF;
 
     byte[] buffer = apdu.getBuffer();
-    // TODO: Review and remove short length = (short) (buffer[ISO7816.OFFSET_LC] & 0xFF);
 
     /*
      * PRE-CONDITIONS
@@ -400,8 +400,6 @@ public final class OpenFIPS201 extends Applet {
 
     final byte CONST_P1_AUTH = (byte) 0x00;
     final byte CONST_P1_RESET = (byte) 0xFF;
-    // TODO: Review and remove or implement final byte CONST_P2 = (byte) 0xFF;
-    // TODO: Review and remove or implement final byte CONST_LC = (byte) 0x08;
 
     byte[] buffer = apdu.getBuffer();
     short length = (short) (buffer[ISO7816.OFFSET_LC] & 0xFF);
@@ -467,8 +465,6 @@ public final class OpenFIPS201 extends Applet {
 
     byte[] buffer = apdu.getBuffer();
     short length = (short) (buffer[ISO7816.OFFSET_LC] & 0xFF);
-
-    // TODO: Allow any PIN to be changed WITHOUT requiring the old one, if under a GP SCP session
 
     /*
      * PRE-CONDITIONS
@@ -586,7 +582,6 @@ public final class OpenFIPS201 extends Applet {
     final byte CONST_P1 = (byte) 0x00;
 
     byte[] buffer = apdu.getBuffer();
-    // TODO: Review and remove - short length = (short) (buffer[ISO7816.OFFSET_LC] & 0xFF);
 
     /*
      * PRE-CONDITIONS

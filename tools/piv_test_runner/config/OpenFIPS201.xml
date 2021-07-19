@@ -20,31 +20,31 @@
 			<entry name="SYMMETRIC_CARD_AUTHENTICATION_KEY_SUPPORTED" type="string">false</entry>
 			<entry name="PUK_VALID" type="string">12345678</entry>
 			<entry name="GLOBAL_PIN" type="string">12345678</entry>
-			<entry name="OPTIONAL_TEST_FILTER" type="string">CARD_HOLDER_IRIS_IMAGES;DIGITAL_SIGNATURE;DISCOVERY_OBJECT;KEY_HISTORY;KEY_MANAGEMENT;OCC_BIT_GROUP_TEMPLATE;PRINTED_INFORMATION</entry>
+			<entry name="OPTIONAL_TEST_FILTER" type="string">DIGITAL_SIGNATURE;DISCOVERY_OBJECT;KEY_MANAGEMENT</entry>
 			<entry name="KEY_ALGORITHMS_AUTHENTICATION" type="string">11</entry>
-			<entry name="CHANGE_REFERENCE_WITH_PUK" type="string">false</entry>
+			<entry name="CHANGE_REFERENCE_WITH_PUK" type="string">true</entry>
 			<entry name="OCC_FIRST_FINGER_BLOCK_ATTEMPTS" type="string">8</entry>
 			<entry name="UNKNOWN_KEY" type="string">77</entry>
 			<entry name="RUN_BLOCKING_TESTS_PUK" type="string">false</entry>
 			<entry name="PIN_RESET_RETRY_COUNTER_RESETS_PUK_COUNTER" type="string">true</entry>
-			<entry name="PUK_BLOCK_ATTEMPTS" type="string">3</entry>
+			<entry name="PUK_BLOCK_ATTEMPTS" type="string">6</entry>
 			<entry name="GENERAL_AUTH_ALGORITHM_PIV_AUTHENTICATION_KEY" type="string">07</entry>
 			<entry name="UNKNOWN_OBJECT" type="string">05cf20</entry>
 			<entry name="OCC_PRIMARY_FINGER_VALUE" type="string"/>
 			<entry name="OCC_SECONDARY_FINGER_VALUE" type="string"/>
-			<entry name="KEY_ALGORITHMS_CARD_MANAGEMENT" type="string">0C</entry>
-			<entry name="KEY_ALGORITHMS_CARD_AUTHENTICATION_SYMMETRIC" type="string">0C</entry>
+			<entry name="KEY_ALGORITHMS_CARD_MANAGEMENT" type="string">03</entry>
+			<entry name="KEY_ALGORITHMS_CARD_AUTHENTICATION_SYMMETRIC" type="string">03</entry>
 			<entry name="PIN_VALID" type="string">123456</entry>
 			<entry name="KEY_ALGORITHMS_CARD_AUTHENTICATION" type="string">11</entry>
 			<entry name="RUN_BLOCKING_TESTS_PIN" type="string">false</entry>
 			<entry name="GLOBAL_PIN_UPDATE" type="string">12345678</entry>
-			<entry name="KEY_ALGORITHMS_DIGITAL_SIGNATURE" type="string">14</entry>
-			<entry name="PIN_BLOCK_ATTEMPTS" type="string">2</entry>
+			<entry name="KEY_ALGORITHMS_DIGITAL_SIGNATURE" type="string">11</entry>
+			<entry name="PIN_BLOCK_ATTEMPTS" type="string">6</entry>
 			<entry name="GLOBAL_PIN_BLOCK_ATTEMPTS" type="string">2</entry>
 			<entry name="PAIRING_CODE" type="string"/>
 			<entry name="OCC_SECOND_FINGER_BLOCK_ATTEMPTS" type="string">8</entry>
-			<entry name="KEY_ALGORITHMS_KEY_MANAGEMENT" type="string">14</entry>
-			<entry name="KEY_ALGORITHMS_SECURE_MESSAGING" type="string"/>
+			<entry name="KEY_ALGORITHMS_KEY_MANAGEMENT" type="string">11</entry>
+			<entry name="KEY_ALGORITHMS_SECURE_MESSAGING" type="string">11</entry>
 		<group name="output">
 					<entry name="TestResultPath" type="string">.\piv_tests\SP800_73_4\results</entry>
 					<entry name="ContainerBufferPath" type="string">.\piv_tests\SP800_73_4\buffer</entry>
@@ -102,22 +102,7 @@ ne8iSf8BGA==
 					<entry name="KEY_9D_12" type="string"/>
 					<entry name="KEY_9C_05" type="string"/>
 					<entry name="KEY_9D_13" type="string"/>
-					<entry name="KEY_9D_14" type="string">-----BEGIN CERTIFICATE-----
-MIICgDCCAgagAwIBAgIJAN7GaPoJHXZ+MAoGCCqGSM49BAMCMH4xCzAJBgNVBAYT
-AkFVMQwwCgYDVQQIDANOU1cxFTATBgNVBAcMDE9jZWFuIFNob3JlczEPMA0GA1UE
-CgwGTWFraW5hMRcwFQYDVQQDDA5FeGFtcGxlIDlEIEtleTEgMB4GCSqGSIb3DQEJ
-ARYRcGl2QG1ha2luYS5jb20uYXUwHhcNMjAwNzEyMTEyMzA3WhcNMzAwNzEwMTEy
-MzA3WjB+MQswCQYDVQQGEwJBVTEMMAoGA1UECAwDTlNXMRUwEwYDVQQHDAxPY2Vh
-biBTaG9yZXMxDzANBgNVBAoMBk1ha2luYTEXMBUGA1UEAwwORXhhbXBsZSA5RCBL
-ZXkxIDAeBgkqhkiG9w0BCQEWEXBpdkBtYWtpbmEuY29tLmF1MHYwEAYHKoZIzj0C
-AQYFK4EEACIDYgAEo6/kyPTAwzyIWO8Y8XEb8cC3PeHu16xDv/bXkKcMGPTkOkPI
-cHpRMsgfJPyun0uIfVXpfnR4B2rY1pfa5K7t9ZrwljjvwdnoNqdIBSNAvZgVxfsy
-6qV8ataCl7FWBtloo1AwTjAdBgNVHQ4EFgQUUr7ovB7ui5HcsRmCYKqnPtvei9Ew
-HwYDVR0jBBgwFoAUUr7ovB7ui5HcsRmCYKqnPtvei9EwDAYDVR0TBAUwAwEB/zAK
-BggqhkjOPQQDAgNoADBlAjEAglYXQvjk3V0UkJmJ6gX3XenXWoHFcV3JHWaxGpwG
-j6oIRvFPuSVQP0/tMmFyzSS0AjAPjHbSGtOz8tgt78xXfpCmHMe+Ju+E6QDrwntF
-Jj8SGTVWhjWNyhpNQnGnQrJOKr4=
------END CERTIFICATE-----</entry>
+					<entry name="KEY_9D_14" type="string"/>
 					<entry name="KEY_9E_0E" type="string"/>
 					<entry name="KEY_9E_0F" type="string"/>
 					<entry name="KEY_9A_0E" type="string"/>
@@ -311,22 +296,7 @@ W8Iv0rLVKw==
 					<entry name="KEY_9B_04" type="string"/>
 					<entry name="KEY_9B_03" type="string">B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBFB0B1B2B3B4B5B6B7</entry>
 					<entry name="KEY_9B_02" type="string"/>
-					<entry name="KEY_9C_14" type="string">-----BEGIN CERTIFICATE-----
-MIICgDCCAgagAwIBAgIJAIArVKheJOCIMAoGCCqGSM49BAMCMH4xCzAJBgNVBAYT
-AkFVMQwwCgYDVQQIDANOU1cxFTATBgNVBAcMDE9jZWFuIFNob3JlczEPMA0GA1UE
-CgwGTWFraW5hMRcwFQYDVQQDDA5FeGFtcGxlIDlDIEtleTEgMB4GCSqGSIb3DQEJ
-ARYRcGl2QG1ha2luYS5jb20uYXUwHhcNMjAwNzEyMTEyMzE2WhcNMzAwNzEwMTEy
-MzE2WjB+MQswCQYDVQQGEwJBVTEMMAoGA1UECAwDTlNXMRUwEwYDVQQHDAxPY2Vh
-biBTaG9yZXMxDzANBgNVBAoMBk1ha2luYTEXMBUGA1UEAwwORXhhbXBsZSA5QyBL
-ZXkxIDAeBgkqhkiG9w0BCQEWEXBpdkBtYWtpbmEuY29tLmF1MHYwEAYHKoZIzj0C
-AQYFK4EEACIDYgAECJ1OWcLAObHbzQj+s71rKd+cRkrcNy3lfVzgT74qIzR9h5s5
-ssUGemSHUMWMRYktoNm3FJ/JbJLTj1c0aNTqdGMB2+WK9ut5GmNpIAjzFjKan0f/
-/to9Qyw5cDZCFz4no1AwTjAdBgNVHQ4EFgQUXjgppfx9INfnx8qBX5ySEDPeZO4w
-HwYDVR0jBBgwFoAUXjgppfx9INfnx8qBX5ySEDPeZO4wDAYDVR0TBAUwAwEB/zAK
-BggqhkjOPQQDAgNoADBlAjEAiN+pLm73GfSYWdPDc+7kHcHF/wni16Psjc/UKewj
-ijxsTyXNosuYdGLSHZRVn6QqAjAh5pvcAfOmYCtqC2ndWJoKHdG1qLrT/+ElbBo0
-RY0PJSmBLRXmw3NAghh/jCaBevY=
------END CERTIFICATE-----</entry>
+					<entry name="KEY_9C_14" type="string"/>
 		</group>
 	<group name="advanced">
 					<entry name="TestClassFactory" type="string">com.tvec.smart_card.piv.apdu.tests.TestClassFactory</entry>
@@ -344,16 +314,15 @@ RY0PJSmBLRXmw3NAghh/jCaBevY=
 					<entry name="FIPS201VCICompatibility" type="string">true</entry>
 					<entry name="RunSecureMessagingKeyGeneration" type="string">false</entry>
 					<entry name="RunCVCCertificateTests" type="string">false</entry>
-					<entry name="RunBITGPutData" type="string">true</entry>
-					<entry name="RunKeyGenerationTests" type="string">false</entry>
+					<entry name="RunBITGPutData" type="string">false</entry>
+					<entry name="RunKeyGenerationTests" type="string">true</entry>
 		</group>
 </group>
 	<group name="report_settings">
 			<entry name="iut_version" type="string">SP800_73_4 ver. test</entry>
-			<entry name="iut_card_manufacturer_name" type="string">Brian T.
-			Nonmariner</entry>
-			<entry name="iut_tester_name" type="string"/>
-			<entry name="implementation_under_test" type="string">73-4 Test Card</entry>
-			<entry name="report_directory" type="string">.\piv_tests\SP800_73_4\reports</entry>
+			<entry name="iut_card_manufacturer_name" type="string">Makina</entry>
+			<entry name="iut_tester_name" type="string">Kim O'Sullivan - Makina</entry>
+			<entry name="implementation_under_test" type="string">OpenFIPS201</entry>
+			<entry name="report_directory" type="string">.\test_runner_reports</entry>
 	</group>
 </configuration>

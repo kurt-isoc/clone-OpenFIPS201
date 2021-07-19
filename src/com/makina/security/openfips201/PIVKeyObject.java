@@ -80,14 +80,32 @@ public abstract class PIVKeyObject extends PIVObject {
   public static final byte ATTR_NONE = (byte) 0x00;
 
   // This key can be used for administrative authentication
+  // SYM: Supported
+  // RSA: Not supported
+  // ECC: Not supported
   public static final byte ATTR_ADMIN = (byte) 0x01;
 
-  // This key can only be generated on-card (i.e. injection is blocked)
-  public static final byte ATTR_GENERATE_ONLY = (byte) 0x02;
+  // This symmetric key permits INTERNAL authentication (encrypting a challenge).
+  // NOTE: Don't ever use this as it is totally insecure! See SECURITY.MD
+  // SYM: Supported
+  // RSA: Not supported
+  // ECC: Not supported
+  public static final byte ATTR_PERMIT_INTERNAL = (byte) 0x02;
 
-  // This key is limited to Mutual (host/card) authentication only). Disables EXTERNAL AUTH.
-  public static final byte ATTR_MUTUAL_ONLY = (byte) 0x04;
+  // This symmetric key permits EXTERNAL authentication (one-way challenge).
+  // NOTE: Using this method does not provide any authentication of the card,
+  //       so it is recommended to use MUTUAL authentication only.
+  // SYM: Supported
+  // RSA: Not supported
+  // ECC: Not supported
+  public static final byte ATTR_PERMIT_EXTERNAL = (byte) 0x04;
 
+  // This key value may be injected under an administrative session
+  // SYM: Supported (Must always be set!)
+  // RSA: Supported
+  // ECC: Supported
+  public static final byte ATTR_IMPORTABLE = (byte) 0x10;
+  
   //
   // Common Key Elements
   //
@@ -123,7 +141,6 @@ public abstract class PIVKeyObject extends PIVObject {
     resetSecurityStatus();
   }
 
-  // TODO: Possible applet firewall issues with public static method. Review this
   public static PIVKeyObject create(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
 
@@ -135,11 +152,27 @@ public abstract class PIVKeyObject extends PIVObject {
       case PIV.ID_ALG_AES_128:
       case PIV.ID_ALG_AES_192:
       case PIV.ID_ALG_AES_256:
+      	// Attribute Check - The IMPORTABLE attribute must be set for symmetric keys
+      	if ((attributes & ATTR_IMPORTABLE) == (byte)0) {
+	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      	}
         key = new PIVKeyObjectSYM(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 
       case PIV.ID_ALG_RSA_1024:
       case PIV.ID_ALG_RSA_2048:
+      	// Attribute Check - The ADMIN attribute MUST NOT be set for assymetric keys
+      	if ((attributes & ATTR_ADMIN) != (byte)0) {
+	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      	}
+      	// Attribute Check - The INTERNAL attribute MUST NOT be set for assymetric keys
+      	if ((attributes & ATTR_PERMIT_INTERNAL) != (byte)0) {
+	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      	}
+      	// Attribute Check - The EXTERNAL attribute MUST NOT be set for assymetric keys
+      	if ((attributes & ATTR_PERMIT_EXTERNAL) != (byte)0) {
+	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      	}
         key = new PIVKeyObjectRSA(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 
@@ -147,6 +180,15 @@ public abstract class PIVKeyObject extends PIVObject {
       case PIV.ID_ALG_ECC_P384:
       case PIV.ID_ALG_ECC_CS2:
       case PIV.ID_ALG_ECC_CS7:
+      	if ((attributes & ATTR_ADMIN) != (byte)0) {
+	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      	}
+      	if ((attributes & ATTR_PERMIT_INTERNAL) != (byte)0) {
+	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      	}
+      	if ((attributes & ATTR_PERMIT_EXTERNAL) != (byte)0) {
+	      	ISOException.throwIt(ISO7816.SW_WRONG_DATA);
+      	}
         key = new PIVKeyObjectECC(id, modeContact, modeContactless, mechanism, role, attributes);
         break;
 

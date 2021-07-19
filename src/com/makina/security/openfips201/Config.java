@@ -32,6 +32,10 @@ package com.makina.security.openfips201;
  */
 public abstract class Config {
 
+  private Config() {
+  	// Prevent instantiation
+  }
+
   ///////////////////////////////////////////////////////////////////////////
   //
   // APPLET CONFIGURATION
@@ -729,28 +733,14 @@ public abstract class Config {
       new byte[] {
 
         /// 2 bytes - Discovery Object (TAG '7E')
-        (byte) 0x7E,
-        (byte) 0x12,
+        (byte) 0x7E, (byte) 0x12,
 
         // 2 + 11 bytes - PIV Card Application AID (TAG '4F')
-        (byte) 0x4F,
-        (byte) 0x0B,
-        (byte) 0xA0,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0x03,
-        (byte) 0x08,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0x10,
-        (byte) 0x00,
-        (byte) 0x01,
-        (byte) 0x00,
+        (byte) 0x4F, (byte) 0x0B, (byte) 0xA0, (byte) 0x00, (byte) 0x00, (byte) 0x03, (byte) 0x08,
+        (byte) 0x00, (byte) 0x00, (byte) 0x10, (byte) 0x00, (byte) 0x01, (byte) 0x00,
 
         // 3 + 2 bytes - PIN Usage Policy
-        (byte) 0x5F,
-        (byte) 0x2F,
-        (byte) 0x02,
+        (byte) 0x5F, (byte) 0x2F, (byte) 0x02,
 
         // Tag 0x5F2F encodes the PIN Usage Policy in two bytes:
 
@@ -762,31 +752,25 @@ public abstract class Config {
         // Bit 7 is set to 1 to indicate that the mandatory PIV Card Application PIN
         // satisfies the PIV Access Control Rules (ACRs) for command
         // execution and data object access.
-        (FEATURE_PIN_CARD_ENABLED ? (byte) (1 << 6) : (byte) 0)
-            |
+			(FEATURE_PIN_CARD_ENABLED ? (byte) (1 << 6) : (byte) 0)
 
             // Bit 6 indicates whether the optional Global PIN satisfies the PIV ACRs for
             // command execution and PIV data object access.
-            (FEATURE_PIN_GLOBAL_ENABLED ? (byte) (1 << 5) : (byte) 0)
-            |
+            | (FEATURE_PIN_GLOBAL_ENABLED ? (byte) (1 << 5) : (byte) 0)
 
             // Bit 5 indicates whether the optional OCC satisfies the PIV ACRs for
             // command execution and PIV data object access
-            (byte) (0 << 4)
-            |
+            | (byte) (0 << 4)
 
             // Bit 4 indicates whether the optional VCI is implemented
-            (byte) (0 << 3)
-            |
+            | (byte) (0 << 3)
 
             // Bit 3 is set to zero if the pairing code is required to establish a VCI and is
             // set to one if a VCI is established without pairing code
-            (byte) (0 << 2)
-            |
+            | (byte) (0 << 2)
 
             // Bits 2 and 1 of the first byte shall be set to zero
-            (byte) (0 << 1)
-            | (byte) (0 << 0),
+            | (byte) (0 << 1) | (byte) (0 << 0),
 
         // SECOND BYTE
         // -----------------------------

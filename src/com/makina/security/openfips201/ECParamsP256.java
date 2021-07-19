@@ -105,7 +105,7 @@ final class ECParamsP256 extends ECParams {
 
   private ECParamsP256() {}
 
-  public static ECParams Instance() {
+  public static ECParams getInstance() {
     if (instance == null) {
       instance = new ECParamsP256();
     }
@@ -139,6 +139,6 @@ final class ECParamsP256 extends ECParams {
 
   @Override
   protected short getH() {
-    return h;
+    return H;
   }
 }

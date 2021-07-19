@@ -66,18 +66,18 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   private static MessageDigest digestSHA384 = null;
   private static Cipher cipherAES = null;
 
-  public PIVKeyObjectECC(
+  protected PIVKeyObjectECC(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
 
     switch (getMechanism()) {
       case PIV.ID_ALG_ECC_P256:
       case PIV.ID_ALG_ECC_CS2:
-        params = ECParamsP256.Instance();
+        params = ECParamsP256.getInstance();
         break;
       case PIV.ID_ALG_ECC_P384:
       case PIV.ID_ALG_ECC_CS7:
-        params = ECParamsP384.Instance();
+        params = ECParamsP384.getInstance();
         break;
       default:
         params = null; // Keep the compiler happy

@@ -49,7 +49,7 @@ public final class PIVKeyObjectSYM extends PIVKeyObject {
   private static Cipher cspAES = null;
   private static Cipher cspTDEA = null;
 
-  public PIVKeyObjectSYM(
+  protected PIVKeyObjectSYM(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
   }

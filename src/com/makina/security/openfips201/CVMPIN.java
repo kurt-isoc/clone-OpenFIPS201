@@ -72,10 +72,12 @@ public final class CVMPIN extends OwnerPIN implements PIN {
     cvm.resetState();
   }
 
+  @Override
   public void update(byte[] pin, short offset, byte length) throws PINException {
     cvm.update(pin, offset, length, CVM.FORMAT_HEX);
   }
 
+  @Override
   public void resetAndUnblock() {
     cvm.resetAndUnblockState();
   }
