@@ -55,24 +55,17 @@ public final class PIVDataObject extends PIVObject {
   }
 
   public void allocate(short length) {
-    if (length < 0) {
-      ISOException.throwIt(ISO7816.SW_DATA_INVALID);
-    } else if (length == 0) {
-      content = null;
-      runGc();
-    } else if (content == null) {
+
+    Assert.isTrue(length > 0);
+
+    if (content == null) {
       content = new byte[length];
     } else if (length > (short) content.length) {
-
       // Try to reclaim the resources and re-allocate. If this fails then this card does not
       // support objection deletion and so we can't write an object greater than the initial size
       if (!JCSystem.isObjectDeletionSupported()) ISOException.throwIt(ISO7816.SW_FILE_FULL);
 
-      // Wipe our reference to the data, let the GC collect and re-allocate
-      // NOTE: requestObjectDeletion doesn't necessarily do it straight away, so both objects may
-      // remain allocated until the next call to process()
-      content = null;
-      JCSystem.requestObjectDeletion();
+      clear();
       content = new byte[length];
     } else {
       // Just clear the content object
@@ -94,9 +87,17 @@ public final class PIVDataObject extends PIVObject {
    * Wipes all data from the current object
    */
   public void clear() {
-    if (content != null) {
-      Util.arrayFillNonAtomic(content, (short) 0, (short) content.length, (byte) 0x00);
-      bytesAllocated = 0;
+    if (content == null) return;
+
+    PIVSecurityProvider.zeroise(content, (short) 0, (short) content.length);
+    bytesAllocated = 0;
+
+    // Wipe our reference to the data, let the GC collect and re-allocate
+    // NOTE: requestObjectDeletion doesn't necessarily do it straight away, so both objects may
+    // remain allocated until the next call to process()
+    if (JCSystem.isObjectDeletionSupported()) {
+      content = null;
+      JCSystem.requestObjectDeletion();
     }
   }
 }

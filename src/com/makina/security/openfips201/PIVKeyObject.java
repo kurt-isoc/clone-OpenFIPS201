@@ -246,12 +246,4 @@ public abstract class PIVKeyObject extends PIVObject {
   public abstract short getBlockLength();
 
   public abstract void updateElement(byte element, byte[] buffer, short offset, short length);
-
-  /**
-   * Clears all key elements and marks the key as uninitialised.
-   *
-   * <p>Note: If the card does not support ObjectDeletion, repeatedly calling this method may
-   * exhaust NV RAM.
-   */
-  public abstract void clear();
 }

@@ -112,7 +112,12 @@ public abstract class PIVObject {
     }
   }
 
-  /** Clears the current object's value */
+  /**
+   * Clears all data and/or key values and marks the object as uninitialised.
+   *
+   * <p>Note: If the card does not support ObjectDeletion, repeatedly calling this method may
+   * exhaust NV RAM.
+   */
   public abstract void clear();
 
   /** @return returns true if the object has been initialized */

@@ -319,11 +319,7 @@ public final class PIVSecurityProvider {
    * @param length The number of bytes to generate
    */
   public void generateRandom(byte[] buffer, short offset, short length) {
-    if (Config.FEATURE_PIV_TEST_VECTORS) {
-      Util.arrayCopyNonAtomic(Config.TEST_VECTOR_RANDOM, (short) 0, buffer, offset, length);
-    } else {
-      cspRNG.generateData(buffer, offset, length);
-    }
+    cspRNG.generateData(buffer, offset, length);
   }
 
   /**
