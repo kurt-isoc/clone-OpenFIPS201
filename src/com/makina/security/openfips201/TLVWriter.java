@@ -39,9 +39,6 @@ import javacard.framework.Util;
  */
 public final class TLVWriter {
 
-  public static final short LENGTH_1BYTE_MAX = (short) 0x7F;
-  public static final short LENGTH_2BYTE_MAX = (short) 0xFF;
-  public static final short LENGTH_3BYTE_MAX = (short) 0x7FFF;
   // The maximum number of data bytes for the payload, NOT including the main tag and length octets
   // NOTE:
   // - This governs how many bytes are reserved for the parent L value
@@ -115,10 +112,10 @@ public final class TLVWriter {
     writeTag(tag);
 
     // Reserve the LENGTH value
-    if (contentLength <= LENGTH_1BYTE_MAX) {
+    if (contentLength <= TLV.LENGTH_1BYTE_MAX) {
       // Store the offset where we will write the length at the end and increment
       context[CONTEXT_LENGTH_PTR] = context[CONTEXT_OFFSET]++;
-    } else if (contentLength <= LENGTH_2BYTE_MAX) {
+    } else if (contentLength <= TLV.LENGTH_2BYTE_MAX) {
       // Reserve a 1-byte length
       buffer[context[CONTEXT_OFFSET]++] = (byte) 0x81;
 
@@ -158,17 +155,17 @@ public final class TLVWriter {
 
     // Write the now known the LENGTH value
     short length;
-    if (context[CONTEXT_LENGTH_MAX] >= 0 && context[CONTEXT_LENGTH_MAX] <= LENGTH_1BYTE_MAX) {
+    if (context[CONTEXT_LENGTH_MAX] >= 0 && context[CONTEXT_LENGTH_MAX] <= TLV.LENGTH_1BYTE_MAX) {
       length = (short) (context[CONTEXT_OFFSET] - context[CONTEXT_LENGTH_PTR] - 1);
-      if (length > LENGTH_1BYTE_MAX) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+      if (length > TLV.LENGTH_1BYTE_MAX) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
       data[context[CONTEXT_LENGTH_PTR]] = (byte) (length & (short) 0x007F);
     } else if (context[CONTEXT_LENGTH_MAX] >= 0
-        && context[CONTEXT_LENGTH_MAX] <= LENGTH_2BYTE_MAX) {
+        && context[CONTEXT_LENGTH_MAX] <= TLV.LENGTH_2BYTE_MAX) {
       length = (short) (context[CONTEXT_OFFSET] - context[CONTEXT_LENGTH_PTR] - 1);
-      if (length > LENGTH_2BYTE_MAX) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
+      if (length > TLV.LENGTH_2BYTE_MAX) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
       data[context[CONTEXT_LENGTH_PTR]] = (byte) (length & (short) 0x00FF);
     } else if (context[CONTEXT_LENGTH_MAX] >= 0
-        && context[CONTEXT_LENGTH_MAX] <= LENGTH_3BYTE_MAX) {
+        && context[CONTEXT_LENGTH_MAX] <= TLV.LENGTH_3BYTE_MAX) {
       length = (short) (context[CONTEXT_OFFSET] - context[CONTEXT_LENGTH_PTR] - 2);
       Util.setShort(data, context[CONTEXT_LENGTH_PTR], length);
     } else {
@@ -207,6 +204,16 @@ public final class TLVWriter {
   }
 
   /**
+   * Progresses the write pointer forward when you have written to the buffer in some other way.
+   *
+   * @param length The number of elements to progress forward.
+   */
+  public void move(short length) {
+    // TODO: Make sure we won't go over our length boundary
+    context[CONTEXT_OFFSET] += length;
+  }
+
+  /**
    * Adds an object with a byte value to the TLV object
    *
    * @param tag The tag to write
@@ -226,16 +233,6 @@ public final class TLVWriter {
 
     // Set the VALUE
     data[context[CONTEXT_OFFSET]++] = value;
-  }
-
-  /**
-   * Progresses the write pointer forward when you have written to the buffer in some other way.
-   *
-   * @param length The number of elements to progress forward.
-   */
-  public void move(short length) {
-    // TODO: Make sure we won't go over our length boundary
-    context[CONTEXT_OFFSET] += length;
   }
 
   /**

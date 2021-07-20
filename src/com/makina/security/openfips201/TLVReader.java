@@ -38,36 +38,7 @@ import javacard.framework.Util;
  * class, no constructed flag, no length formatting)
  */
 public final class TLVReader {
-
-  // Tag Class
-  public static final byte CLASS_UNIVERSAL = (byte) 0x00;
-  public static final byte CLASS_APPLICATION = (byte) 0x40;
-  public static final byte CLASS_CONTEXT = (byte) 0x80;
-  public static final byte CLASS_PRIVATE = (byte) 0xC0;
-
-  // Masks
-  public static final byte MASK_CONSTRUCTED = (byte) 0x20;
-  public static final byte MASK_LOW_TAG_NUMBER = (byte) 0x1F;
-  public static final byte MASK_HIGH_TAG_NUMBER = (byte) 0x7F;
-  public static final byte MASK_TAG_MULTI_BYTE = (byte) 0x1F;
-  public static final byte MASK_HIGH_TAG_MOREDATA = (byte) 0x80;
-  public static final byte MASK_LONG_LENGTH = (byte) 0x80;
-  public static final byte MASK_LENGTH = (byte) 0x7F;
-
-  // Universal tags
-  public static final byte ASN1_BOOLEAN = (byte) 0x01;
-  public static final byte ASN1_INTEGER = (byte) 0x02;
-  public static final byte ASN1_BIT_STRING = (byte) 0x03;
-  public static final byte ASN1_OCTET_STRING = (byte) 0x04;
-  public static final byte ASN1_NULL = (byte) 0x05;
-  public static final byte ASN1_OBJECT = (byte) 0x06;
-  public static final byte ASN1_ENUMERATED = (byte) 0x0A;
-  public static final byte ASN1_SEQUENCE = (byte) 0x10; //  "Sequence" and "Sequence of"
-  public static final byte ASN1_SET = (byte) 0x11; //  "Set" and "Set of"
-  public static final byte ASN1_PRINT_STRING = (byte) 0x13;
-  public static final byte ASN1_T61_STRING = (byte) 0x14;
-  public static final byte ASN1_IA5_STRING = (byte) 0x16;
-  public static final byte ASN1_UTC_TIME = (byte) 0x17;
+  
   // The length of the entire TLV buffer for boundary checking
   private static final short CONTEXT_LENGTH = (short) 0;
   // The current position in the buffer
@@ -75,6 +46,7 @@ public final class TLVReader {
   // The offset given when the data was set, allowing for a reset
   private static final short CONTEXT_POSITION_RESET = (short) 2;
   private static final short LENGTH_CONTEXT = (short) 4;
+  
   //
   // CONSTANTS
   //
@@ -116,25 +88,25 @@ public final class TLVReader {
     // Then the tag field consists of a single byte.
     // Otherwise (B5-B1 set to 1 in the leading byte), the tag field shall continue on one or more
     // subsequent bytes.
-    if ((data[offset] & MASK_TAG_MULTI_BYTE) == MASK_TAG_MULTI_BYTE) {
-      while ((data[++offset] & MASK_HIGH_TAG_MOREDATA) == MASK_HIGH_TAG_MOREDATA) {
+    if ((data[offset] & TLV.MASK_TAG_MULTI_BYTE) == TLV.MASK_TAG_MULTI_BYTE) {
+      while ((data[++offset] & TLV.MASK_HIGH_TAG_MOREDATA) == TLV.MASK_HIGH_TAG_MOREDATA) {
         // Do nothing, just skip
       }
     }
     offset++; // We now know we can move to the length byte
 
     // Is this a short-form length byte?
-    if ((data[offset] & MASK_LONG_LENGTH) != MASK_LONG_LENGTH) {
+    if ((data[offset] & TLV.MASK_LONG_LENGTH) != TLV.MASK_LONG_LENGTH) {
       // short-form length
       return (short) (data[offset] & 0xFF);
     }
 
     // Is there more than 1 byte?
-    if ((data[offset] & MASK_LENGTH) == 1) {
+    if ((data[offset] & TLV.MASK_LENGTH) == 1) {
       // Values 0-255
       offset++;
       return (short) (data[offset] & 0xFF);
-    } else if ((data[offset] & MASK_LENGTH) == 2) {
+    } else if ((data[offset] & TLV.MASK_LENGTH) == 2) {
       // Values 0-65535
       // NOTE: Since we're assigning to a signed short, we don't
       // support anything greater than +32766.
@@ -165,8 +137,8 @@ public final class TLVReader {
     // Then the tag field consists of a single byte.
     // Otherwise (B5-B1 set to 1 in the leading byte), the tag field shall continue on one or more
     // subsequent bytes.
-    if ((data[offset] & MASK_TAG_MULTI_BYTE) == MASK_TAG_MULTI_BYTE) {
-      while ((data[++offset] & MASK_HIGH_TAG_MOREDATA) == MASK_HIGH_TAG_MOREDATA) {
+    if ((data[offset] & TLV.MASK_TAG_MULTI_BYTE) == TLV.MASK_TAG_MULTI_BYTE) {
+      while ((data[++offset] & TLV.MASK_HIGH_TAG_MOREDATA) == TLV.MASK_HIGH_TAG_MOREDATA) {
         // Do nothing, just skip
       }
     }
@@ -175,9 +147,9 @@ public final class TLVReader {
     // Skip through the LENGTH element
 
     // Is this a long-form length byte?
-    if ((data[offset] & MASK_LONG_LENGTH) == MASK_LONG_LENGTH) {
+    if ((data[offset] & TLV.MASK_LONG_LENGTH) == TLV.MASK_LONG_LENGTH) {
       // Skip the additional length bytes
-      offset += (byte) (data[offset] & MASK_LENGTH);
+      offset += (byte) (data[offset] & TLV.MASK_LENGTH);
     }
     offset++; // Skip the initial length byte
 
@@ -325,6 +297,52 @@ public final class TLVReader {
   }
 
   /**
+   * Tests if the current value matches the data for the current tag
+   *
+   * @param tag The value to compare against
+   * @return True if the first byte of the data matches the comparison
+   */
+  public boolean matchData(byte value) {
+  	return matchData(value, (short)0);
+  }
+
+  /**
+   * Tests if the current value matches the data for the current tag
+   *
+   * @param tag The value to compare against
+   * @param offset The offset within the data to compare against
+   * @return True if the first byte of the data matches the comparison
+   */
+  public boolean matchData(byte value, short offset) {
+    byte[] data = (byte[]) dataPtr[0];
+    offset += getDataOffset();
+    return (value == data[offset]);
+  }
+
+  /**
+   * Tests if the current value matches the data for the current tag
+   *
+   * @param tag The value to compare against
+   * @return True if the first two bytes of the data matches the comparison
+   */
+  public boolean matchData(short value) {
+  	return matchData(value, (short)0);
+  }
+
+  /**
+   * Tests if the current value matches the data for the current tag
+   *
+   * @param tag The value to compare against
+   * @param offset The offset within the data to compare against
+   * @return True if the first two bytes of the data matches the comparison
+   */
+  public boolean matchData(short value, short offset) {
+    byte[] data = (byte[]) dataPtr[0];
+    offset += getDataOffset();
+    return (value == Util.getShort(data, offset));
+  }
+
+  /**
    * Tests if the current tag matches the supplied one
    *
    * @param tag The tag to find
@@ -359,7 +377,7 @@ public final class TLVReader {
    * @return True if the current tag is constructed
    */
   public boolean isConstructed() {
-    return ((getTag() & MASK_CONSTRUCTED) == MASK_CONSTRUCTED);
+    return ((getTag() & TLV.MASK_CONSTRUCTED) == TLV.MASK_CONSTRUCTED);
   }
 
   /**
