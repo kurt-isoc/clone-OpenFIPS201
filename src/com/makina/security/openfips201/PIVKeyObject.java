@@ -40,7 +40,7 @@ public abstract class PIVKeyObject extends PIVObject {
   // set at once.
   //
 
-  // No special roles are defined by this key
+  // Undefined role
   public static final byte ROLE_NONE = (byte) 0x00;
 
   // This key can be used for card/host authentication
@@ -49,24 +49,24 @@ public abstract class PIVKeyObject extends PIVObject {
   // ECC: Not supported (ECC authentication is just signing)
   public static final byte ROLE_AUTHENTICATE = (byte) 0x01;
 
-  // This key can be used for digital signature generation
-  // SYM: Not supported
-  // RSA: RSA Digital Signature
-  // ECC: ECDSA
-  public static final byte ROLE_SIGN = (byte) 0x02;
-
-  // Used for digital signature verification
-  // NOTE: Currently there is no PIV case for this, but reserve it in case we want the extension
-  // SYM: Not supported
-  // RSA: Not supported
-  // ECC: Not supported
-  public static final byte ROLE_VERIFY = (byte) 0x04;
-
   // This key can be used for key establishment schemes
   // SYM: Not supported
   // RSA: RSA Key Management (decryption)
   // ECC: ECDH
-  public static final byte ROLE_KEY_ESTABLISH = (byte) 0x08;
+  public static final byte ROLE_KEY_ESTABLISH = (byte) 0x02;
+
+  // This key can be used for digital signature generation
+  // SYM: Not supported (Could be a MAC mechanism in the future?)
+  // RSA: RSA Digital Signature
+  // ECC: ECDSA
+  public static final byte ROLE_SIGN = (byte) 0x04;
+
+  // Used for digital signature verification
+  // NOTE: Currently there is no PIV case for this, but reserve it in case we want the extension
+  // SYM: Not supported (Could be a MAC mechanism in the future?)
+  // RSA: Not supported
+  // ECC: Not supported
+  public static final byte ROLE_VERIFY = (byte) 0x08;
 
   // This key can be used for secure messaging establishment
   // SYM: Not supported
@@ -74,9 +74,17 @@ public abstract class PIVKeyObject extends PIVObject {
   // ECC: Opacity ZKM (Must have CVC component)
   public static final byte ROLE_SECURE_MESSAGING = (byte) 0x10;
 
+  // RESERVED - This key can be used for encryption operations
+  public static final byte ROLE_ENCRYPT = (byte) 0x20;
+
+  // RESERVED - This key can be used for decryption operations
+  public static final byte ROLE_DECRYPT = (byte) 0x40;
+
   //
   // Key Attributes
   //
+  
+  // Undefined attribute
   public static final byte ATTR_NONE = (byte) 0x00;
 
   // This key can be used for administrative authentication
