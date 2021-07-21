@@ -263,7 +263,6 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   public short generate(byte[] outBuffer, short outOffset) {
 
     KeyPair keyPair;
-    short length = 0;
     try {
       // Clear any key material
       clear();
@@ -278,8 +277,15 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
 
       TLVWriter writer = TLVWriter.getInstance();
 
-      // Adding 12 to the key length to account for other overhead
-      writer.init(outBuffer, outOffset, (short) (getKeyLengthBytes() * 2 + 12), CONST_TAG_RESPONSE);
+      // Create the TLV response with the appropriate expected length for public key + header
+      if (getMechanism() == PIV.ID_ALG_RSA_1024) {
+      	// We can fit within a 2-byte length (128-255)
+	    writer.init(outBuffer, outOffset, TLV.LENGTH_2BYTE_MAX, CONST_TAG_RESPONSE);
+      } 
+      else { // Mechanism == PIV.ID_ALG_RSA_2048
+      	// We require a 3-byte length (255-32767)
+	    writer.init(outBuffer, outOffset, TLV.LENGTH_3BYTE_MAX, CONST_TAG_RESPONSE);
+      }
 
       // Modulus
       writer.writeTag(CONST_TAG_MODULUS);
@@ -298,18 +304,18 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
       outOffset += ((RSAPublicKey) publicKey).getExponent(outBuffer, outOffset);
       writer.setOffset(outOffset); // Move the current position forward
 
-      length = writer.finish();
+      // Done, return the response length
+      return writer.finish();      
     } catch (CardRuntimeException ex) {
       // At this point we are in a nondeterministic state so we will
       // clear both the public and private keys if they exist
       clear();
       CardRuntimeException.throwIt(ex.getReason());
+      return (short)0; // Keep compiler happy
     } finally {
-      // We new'd these objects so we make sure the memory is freed up once they are out of scope.
+      // We new'd the keyPair, so we make sure the memory is freed up once it is out of scope.
       runGc();
     }
-
-    return length;
   }
 
   /** @return the block length of the key. */

@@ -259,10 +259,8 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
 
       TLVWriter writer = TLVWriter.getInstance();
 
-      // Adding 12 to the key length to account for other overhead
-      writer.init(scratch, offset, (short) (marshaledPubKeyLen + 5), CONST_TAG_RESPONSE);
-
-      // adding 5 bytes to the marshaled key to account for other APDU overhead.
+      // We know that the worst-case of this will fit into a short-form length.
+      writer.init(scratch, offset, TLV.LENGTH_1BYTE_MAX, CONST_TAG_RESPONSE);
       writer.writeTag(ELEMENT_ECC_POINT);
       writer.writeLength(marshaledPubKeyLen);
       offset = writer.getOffset();
@@ -276,7 +274,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
       clear();
       CardRuntimeException.throwIt(cre.getReason());
     } finally {
-      // We new'd these objects so we make sure the memory is freed up once they are out of scope.
+      // We new'd the keyPair, so we make sure the memory is freed up once it is out of scope.
       runGc();
     }
 
