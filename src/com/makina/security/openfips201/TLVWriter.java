@@ -89,10 +89,10 @@ public final class TLVWriter {
    *
    * @param buffer The byte array to write to
    * @param offset The starting offset
-   * @param contentLength the indicative length of the content that will be written
+   * @param maxLength the indicative maximum length of the expected content.
    * @param tag The parent tag value
    */
-  public void init(byte[] buffer, short offset, short contentLength, short tag) {
+  public void init(byte[] buffer, short offset, short maxLength, short tag) {
 
     // RULE: This object must not have another unfinished operation
     if (context[CONTEXT_LOCKED] == STATUS_LOCKED) {
@@ -100,22 +100,22 @@ public final class TLVWriter {
     }
     context[CONTEXT_LOCKED] = STATUS_LOCKED;
 
-    if (contentLength < (short) 0) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+    if (maxLength < (short) 0) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
 
     dataPtr[0] = buffer;
 
     context[CONTEXT_OFFSET] = offset;
     context[CONTEXT_OFFSET_RESET] = offset;
-    context[CONTEXT_LENGTH_MAX] = contentLength;
+    context[CONTEXT_LENGTH_MAX] = maxLength;
 
     // Set the parent TAG
     writeTag(tag);
 
     // Reserve the LENGTH value
-    if (contentLength <= TLV.LENGTH_1BYTE_MAX) {
+    if (maxLength <= TLV.LENGTH_1BYTE_MAX) {
       // Store the offset where we will write the length at the end and increment
       context[CONTEXT_LENGTH_PTR] = context[CONTEXT_OFFSET]++;
-    } else if (contentLength <= TLV.LENGTH_2BYTE_MAX) {
+    } else if (maxLength <= TLV.LENGTH_2BYTE_MAX) {
       // Reserve a 1-byte length
       buffer[context[CONTEXT_OFFSET]++] = (byte) 0x81;
 
@@ -124,7 +124,7 @@ public final class TLVWriter {
 
       // Move the position 1 forward
       context[CONTEXT_OFFSET]++;
-    } else { // (contentLength <= LENGTH_3BYTE_MAX)
+    } else { // (maxLength <= LENGTH_3BYTE_MAX)
       // Reserve a 2-byte length
       buffer[context[CONTEXT_OFFSET]++] = (byte) 0x82;
 
