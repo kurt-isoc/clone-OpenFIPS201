@@ -197,24 +197,19 @@ public final class PIVSecurityProvider {
     PIVKeyObject key =
         PIVKeyObject.create(id, modeContact, modeContactless, mechanism, role, attributes);
 
-    // Check if this is the first key added
+    // Add it to our linked list
+    // NOTE: If this is the first key added, just set our firstKey. Otherwise add it to the head 
+    // to save a traversal (inspired by having no good answer to Steve Paik's question why we
+    // add it to the end).
     if (firstKey == null) {
       firstKey = key;
-      return;
     }
-
-    // TODO: Change to insert at the head instead of the tail
-    // key.nextObject = firstKey;
-    // firstKey = key;
-
-    // Find the last key
-    PIVObject last = firstKey;
-    while (last.nextObject != null) {
-      last = last.nextObject;
-    }
-
-    // Assign the next
-    last.nextObject = key;
+    else 
+    {
+      // Insert at the head of the list
+      key.nextObject = firstKey;
+      firstKey = key;	    
+    }    
   }
 
   /**

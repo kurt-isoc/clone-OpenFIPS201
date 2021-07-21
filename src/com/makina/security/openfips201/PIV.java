@@ -189,7 +189,10 @@ public final class PIV {
 
     //
     // Test File System
-    //
+    /*
+     * TEST FILE SYSTEM
+     * Use this to easily build the NIST-default filesystem
+     *
     createDataObject((byte) 0x01, (byte) 0x7F, (byte) 0x7F);
     createDataObject((byte) 0x02, (byte) 0x7F, (byte) 0x7F);
     createDataObject((byte) 0x03, (byte) 0x01, (byte) 0x01);
@@ -263,6 +266,7 @@ public final class PIV {
     cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x0A, (byte) 0x01, (byte) 0x10);
     cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x0C, (byte) 0x01, (byte) 0x10);
     cspPIV.createKey((byte) 0x9E, (byte) 0x7F, (byte) 0x7F, (byte) 0x11, (byte) 0x02, (byte) 0x10);
+    */
   }
 
   /**
@@ -2274,6 +2278,9 @@ public final class PIV {
       if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
       keyRole = reader.toByte();
 
+      // Move to the next tag
+      reader.moveNext();
+
       // PRE-CONDITION 8c - If the operation is CONST_OP_KEY, then the 'KEY ATTRIBUTE' tag
       //					 may be present with length 1
 
@@ -2548,7 +2555,25 @@ public final class PIV {
        # Would be encoded using DER-TLV as:
        300380010F
       */
+  
+      // TODO: Additional status items
+      // # of keys defined
+      // # of keys initialised
+      // # of data objects defined
+      // # of data objects initialised
+      // PIN retries remaining
+      // PIN retries total
+      // PIN always status
+      // PUK retries remaining
+      // PUK retries total
+      // Total volatile memory
+      // Available volatile memory
+      // Total non-volatile memory
+      // Available non-volatile memory
       
+      
+  
+      // Calculate the number of keys initialised      
       writer.write(TLV.ASN1_ENUMERATED, GPSystem.getCardContentState());
       length = writer.finish();
       break;
@@ -2604,22 +2629,21 @@ public final class PIV {
   private void createDataObject(byte id, byte modeContact, byte modeContactless) {
 
     // Create our new key
-    PIVDataObject data = new PIVDataObject(id, modeContact, modeContactless);
+    PIVDataObject dataObject = new PIVDataObject(id, modeContact, modeContactless);
 
-    // Check if this is the first data object added
+    // Add it to our linked list
+    // NOTE: If this is the first key added, just set our firstKey. Otherwise add it to the head 
+    // to save a traversal (inspired by having no good answer to Steve Paik's question why we
+    // add it to the end).
     if (firstDataObject == null) {
-      firstDataObject = data;
-      return;
+      firstDataObject = dataObject;
     }
-
-    // Find the last data object in the linked list
-    PIVObject last = firstDataObject;
-    while (last.nextObject != null) {
-      last = last.nextObject;
+    else 
+    {
+      // Insert at the head of the list
+      dataObject.nextObject = firstDataObject;
+      firstDataObject = dataObject;
     }
-
-    // Assign the next object
-    last.nextObject = data;
 
     //
     // SPECIAL OBJECT - Discovery Data
@@ -2628,12 +2652,12 @@ public final class PIV {
     //
     if (Config.FEATURE_DISCOVERY_OBJECT_DEFAULT && ID_DATA_DISCOVERY == id) {
 
-      data.allocate((short) Config.DEFAULT_DISCOVERY.length);
+      dataObject.allocate((short) Config.DEFAULT_DISCOVERY.length);
 
       Util.arrayCopyNonAtomic(
           Config.DEFAULT_DISCOVERY,
           (short) 0,
-          data.content,
+          dataObject.content,
           (short) 0,
           (short) Config.DEFAULT_DISCOVERY.length);
     }
