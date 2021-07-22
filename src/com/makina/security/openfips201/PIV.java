@@ -2232,10 +2232,37 @@ public final class PIV {
     // Move to the next tag
     reader.moveNext();
 
-    // PRE-CONDITION 5 - The 'ID' value must be present with length 1
+    // PRE-CONDITION 5 - The 'ID' value must be present
     if (!reader.match(CONST_TAG_ID)) ISOException.throwIt(ISO7816.SW_WRONG_DATA);
-    if (reader.getLength() != (short) 1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
-    byte id = reader.toByte();
+
+    byte id;
+    if (CONST_OP_KEY == operation) {
+      // PRE-CONDITION 6a - For keys, the 'ID' length must be 1
+      if (reader.getLength() != (short)1) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      id = reader.toByte();
+    }
+    else if (CONST_OP_DATA == operation) {
+      //
+      // IMPLEMENTATION NOTE:
+      // We are progressing through to supporting multi-byte definition of data objects, so until
+      // this is fully completed, we will accept 1-3 byte length identifiers and just use the final
+      // byte as the identifier. This means if you pass through '5FC101' and '6FC101' it will fail
+      // until we support the 3-bytes internally.
+      //
+      
+      // PRE-CONDITION 6b - The data objects, the 'ID' length must be between 1 and 3
+      if (reader.getLength() > (short)3) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+      
+      // Use the last byte of the value as the identifier
+      offset = reader.getDataOffset();
+      offset += reader.getLength();
+      offset--;
+      id = scratch[offset];
+    } else {
+      // Invalid operation identifier
+      ISOException.throwIt(ISO7816.SW_WRONG_DATA);   
+      return; // Keep compiler happy
+    }
 
     // Move to the next tag
     reader.moveNext();
