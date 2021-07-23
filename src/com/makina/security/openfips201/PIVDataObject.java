@@ -54,7 +54,7 @@ public final class PIVDataObject extends PIVObject {
     return bytesAllocated;
   }
 
-  public void allocate(short length) {
+  public void allocate(short length) throws ISOException {
 
     Assert.isTrue(length > 0);
 

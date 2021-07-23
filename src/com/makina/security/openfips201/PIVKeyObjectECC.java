@@ -65,8 +65,24 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   private static Cipher cipherAES = null;
 
   protected PIVKeyObjectECC(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) throws ISOException {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
+
+    // MECHANISM CHECK - SIGN
+    if ( hasRole(PIVKeyObject.ROLE_SIGN) && 
+		(signerSHA1 == null)
+		&& (signerSHA256 == null)
+		&& (signerSHA384 == null)
+		&& (signerSHA512 == null)
+		) {
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    }
+    
+    // MECHANISM CHECK - KEY_ESTABLISH and SECURE_MESSAGING
+    if ( (hasRole(PIVKeyObject.ROLE_KEY_ESTABLISH) || hasRole(PIVKeyObject.ROLE_SECURE_MESSAGING)) 
+		  && keyAgreement == null) {
+      ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);
+    }
 
     switch (getMechanism()) {
       case PIV.ID_ALG_ECC_P256:
@@ -92,7 +108,6 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   /*
    * Allows safe allocation of cryptographic service providers at applet instantiation
    */
-  @SuppressWarnings("squid:S3776") // Cyclomatic complexity warning because of the try/catches.
   public static void createProviders() {
 
     if (keyAgreement == null) {
@@ -179,7 +194,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
    * @param length the length of the element
    */
   @Override
-  public void updateElement(byte element, byte[] buffer, short offset, short length) {
+  public void updateElement(byte element, byte[] buffer, short offset, short length) throws ISOException {
 
     switch (element) {
       case ELEMENT_ECC_POINT:
@@ -241,7 +256,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
   }
 
   @Override
-  public short generate(byte[] scratch, short offset) {
+  public short generate(byte[] scratch, short offset) throws CardRuntimeException {
 
     KeyPair keyPair;
     short length = 0;
@@ -298,7 +313,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
    * @return the length of the key
    */
   @Override
-  public short getKeyLengthBits() {
+  public short getKeyLengthBits() throws ISOException {
     switch (getMechanism()) {
       case PIV.ID_ALG_ECC_P256:
       case PIV.ID_ALG_ECC_CS2:
@@ -390,7 +405,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
    */
   @Override
   public short keyAgreement(
-      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) throws ISOException {
 
     if (inLength != marshaledPubKeyLen) {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
@@ -412,7 +427,7 @@ public final class PIVKeyObjectECC extends PIVKeyObjectPKI {
    */
   @Override
   public short sign(
-      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) throws ISOException {
 
     Signature signer = null;
 

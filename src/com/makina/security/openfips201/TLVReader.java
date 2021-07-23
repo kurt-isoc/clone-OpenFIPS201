@@ -77,7 +77,7 @@ public final class TLVReader {
    * @param offset The offset of the tag to read
    * @return The length of the data element
    */
-  public static short getLength(byte[] data, short offset) {
+  public static short getLength(byte[] data, short offset) throws ISOException {
 
     //
     // Skip the TAG element
@@ -189,7 +189,7 @@ public final class TLVReader {
   }
 
   /** Restores the current position to the offset originally supplied to init() */
-  public void resetPosition() {
+  public void resetPosition() throws ISOException {
     if (!isInitialized()) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
     context[CONTEXT_POSITION] = context[CONTEXT_POSITION_RESET];
   }
@@ -430,7 +430,7 @@ public final class TLVReader {
    *
    * @return The current tag value as a short integer
    */
-  public short toShort() {
+  public short toShort() throws ISOException {
     byte[] data = (byte[]) dataPtr[0];
     short length = getLength();
     short offset = getDataOffset();
@@ -450,7 +450,7 @@ public final class TLVReader {
    *
    * @return The current tag value as a byte
    */
-  public byte toByte() {
+  public byte toByte() throws ISOException {
     byte[] data = (byte[]) dataPtr[0];
     short length = getLength();
 

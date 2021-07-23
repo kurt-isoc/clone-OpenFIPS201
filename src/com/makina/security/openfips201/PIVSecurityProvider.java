@@ -261,46 +261,39 @@ public final class PIVSecurityProvider {
    */
   public boolean checkAccessModeObject(PIVObject object) {
 
-    boolean valid;
+    boolean valid = false;
 
     // Select the appropriate access mode to check
     byte mode =
         (securityFlags[FLAG_CONTACTLESS]) ? object.getModeContactless() : object.getModeContact();
 
-    if (mode == PIVObject.ACCESS_MODE_NEVER) {
-      valid = false;
-    } else if (mode == PIVObject.ACCESS_MODE_ALWAYS) {
+    // Check for special ALWAYS condition, which ignores PIN_ALWAYS
+    if (mode == PIVObject.ACCESS_MODE_ALWAYS) {
       valid = true;
-    } else {
-      // Assume true, then if any required permission is not met, we fail
-      valid = true;
-
+    }
+    else {
       // Check for PIN and GLOBAL PIN
-      if ((mode & PIVObject.ACCESS_MODE_PIN) == PIVObject.ACCESS_MODE_PIN) {
-
-        // If both FEATURE_PIN_CARD_ENABLED and FEATURE_PIN_GLOBAL_VERIFY are false, automatically
-        // fail
-        if (!Config.FEATURE_PIN_CARD_ENABLED && !Config.FEATURE_PIN_GLOBAL_ENABLED) {
-          valid = false;
+      if ( (mode & PIVObject.ACCESS_MODE_PIN) == PIVObject.ACCESS_MODE_PIN
+		   || (mode & PIVObject.ACCESS_MODE_PIN_ALWAYS) == PIVObject.ACCESS_MODE_PIN_ALWAYS) {
+        // At least one PIN type must be both Enabled and Validated or we fail
+        if (Config.FEATURE_PIN_CARD_ENABLED && cardPIN.isValidated())
+        {
+          valid = true;
         }
-
-        // Now that we know at least one of them must be enabled, either being enabled AND valid
-        // will do
-        else if (!(Config.FEATURE_PIN_CARD_ENABLED && cardPIN.isValidated())
-            || (Config.FEATURE_PIN_GLOBAL_ENABLED && globalPIN.isValidated())) {
-          valid = false;
+        if (Config.FEATURE_PIN_GLOBAL_ENABLED && globalPIN.isValidated()) {
+          valid = true;
         }
       }
 
-      // Check for PIN ALWAYS
-      if (((mode & PIVObject.ACCESS_MODE_PIN_ALWAYS) == PIVObject.ACCESS_MODE_PIN_ALWAYS)
+      // Check for PIN ALWAYS    
+      if ((mode & PIVObject.ACCESS_MODE_PIN_ALWAYS) == PIVObject.ACCESS_MODE_PIN_ALWAYS
           && !securityFlags[FLAG_PIN_ALWAYS]) {
         valid = false;
       }
-    }
 
-    // Now that we have performed a security check, clear the pinAlways flag
-    securityFlags[FLAG_PIN_ALWAYS] = false;
+      // Now that we have performed a security check, clear the pinAlways flag
+      securityFlags[FLAG_PIN_ALWAYS] = false;    
+    }
 
     // Done
     return valid;

@@ -150,7 +150,7 @@ public abstract class PIVKeyObject extends PIVObject {
   }
 
   public static PIVKeyObject create(
-      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
+      byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) throws ISOException {
 
     PIVKeyObject key;
 

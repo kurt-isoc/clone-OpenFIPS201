@@ -202,7 +202,7 @@ public final class ChainBuffer {
    *
    * @param apdu The incoming APDU buffer
    */
-  public void checkIncomingAPDU(byte[] apdu) {
+  public void checkIncomingAPDU(byte[] apdu) throws ISOException {
 
     final short CLA_MASK = ~(short) 0x1000;
 
@@ -239,7 +239,7 @@ public final class ChainBuffer {
    *     the header.
    */
   public short processIncomingAPDU(
-      byte[] apdu, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
+      byte[] apdu, short inOffset, short inLength, byte[] outBuffer, short outOffset) throws ISOException {
 
     //
     // STATE VALIDATION
@@ -398,7 +398,7 @@ public final class ChainBuffer {
    * @param offset The starting offset to read from
    * @param length The length of the data to read
    */
-  public void processIncomingObject(byte[] buffer, short offset, short length) {
+  public void processIncomingObject(byte[] buffer, short offset, short length) throws ISOException {
 
     // Check if we have anything to do
     if (context[CONTEXT_STATE] != STATE_INCOMING_OBJECT) return;
@@ -489,7 +489,7 @@ public final class ChainBuffer {
    *
    * @param apdu The current APDU buffer to transmit with
    */
-  public void processOutgoing(APDU apdu) {
+  public void processOutgoing(APDU apdu) throws ISOException {
 
     // Check if we have anything to do
     if (context[CONTEXT_STATE] != STATE_OUTGOING) return;

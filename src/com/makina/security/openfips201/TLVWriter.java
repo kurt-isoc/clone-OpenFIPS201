@@ -92,13 +92,16 @@ public final class TLVWriter {
    * @param maxLength the indicative maximum length of the expected content.
    * @param tag The parent tag value
    */
-  public void init(byte[] buffer, short offset, short maxLength, short tag) {
+  public void init(byte[] buffer, short offset, short maxLength, short tag) throws ISOException {
 
     // RULE: This object must not have another unfinished operation
-    if (context[CONTEXT_LOCKED] == STATUS_LOCKED) {
-      ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
-    }
-    context[CONTEXT_LOCKED] = STATUS_LOCKED;
+    //if (context[CONTEXT_LOCKED] == STATUS_LOCKED) {
+    //  ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+    //}
+    //context[CONTEXT_LOCKED] = STATUS_LOCKED;
+
+	// Force the parent tag to be constructed
+	tag |= TLV.MASK_CONSTRUCTED;
 
     if (maxLength < (short) 0) ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
 
@@ -141,12 +144,12 @@ public final class TLVWriter {
    *
    * @return The length of the entire data object
    */
-  public short finish() {
+  public short finish() throws ISOException {
 
     // RULE: This object must be have an outstanding operation
-    if (context[CONTEXT_LOCKED] != STATUS_LOCKED) {
-      ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
-    }
+    //if (context[CONTEXT_LOCKED] != STATUS_LOCKED) {
+    //  ISOException.throwIt(ISO7816.SW_CONDITIONS_NOT_SATISFIED);
+    //}
 
     // Write the length to the data object tag field
     if (dataPtr[0] == null) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
@@ -191,7 +194,7 @@ public final class TLVWriter {
     context[CONTEXT_OFFSET] = (short) 0;
     context[CONTEXT_LENGTH_PTR] = (short) 0;
     context[CONTEXT_LENGTH_MAX] = (short) 0;
-    context[CONTEXT_LOCKED] = STATUS_UNLOCKED;
+    //context[CONTEXT_LOCKED] = STATUS_UNLOCKED;
   }
 
   /**
@@ -219,7 +222,7 @@ public final class TLVWriter {
    * @param tag The tag to write
    * @param value The value to write
    */
-  public void write(short tag, byte value) {
+  public void write(short tag, byte value) throws ISOException {
     if (dataPtr[0] == null) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
     byte[] data = (byte[]) dataPtr[0];
 
@@ -241,7 +244,7 @@ public final class TLVWriter {
    * @param tag The tag to write
    * @param value The value to write
    */
-  public void write(short tag, short value) {
+  public void write(short tag, short value) throws ISOException {
     if (dataPtr[0] == null) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
     byte[] data = (byte[]) dataPtr[0];
 
@@ -267,7 +270,7 @@ public final class TLVWriter {
    * @param offset The starting offset for the input array
    * @param length The number of bytes to read from the input array
    */
-  public void write(short tag, byte[] buffer, short offset, short length) {
+  public void write(short tag, byte[] buffer, short offset, short length) throws ISOException {
 
     if (dataPtr[0] == null) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
     byte[] data = (byte[]) dataPtr[0];
@@ -292,7 +295,7 @@ public final class TLVWriter {
    *
    * @param tag The tag to write
    */
-  public void writeNull(short tag) {
+  public void writeNull(short tag) throws ISOException {
 
     if (dataPtr[0] == null) ISOException.throwIt(ISO7816.SW_DATA_INVALID);
     byte[] data = (byte[]) dataPtr[0];
@@ -325,7 +328,6 @@ public final class TLVWriter {
    * @return The length of the tag bytes written
    */
   public short writeTag(short tag) {
-
     if (tag >= 0 && tag <= 255) {
       // Single-byte tag
       ((byte[]) dataPtr[0])[context[CONTEXT_OFFSET]] = (byte) tag;

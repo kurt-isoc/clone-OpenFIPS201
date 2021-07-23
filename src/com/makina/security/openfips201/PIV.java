@@ -326,7 +326,7 @@ public final class PIV {
    * @param offset The starting offset of the CDATA section
    * @return The length of the entire data object
    */
-  public short getData(byte[] buffer, short offset) {
+  public short getData(byte[] buffer, short offset) throws ISOException {
 
     final byte CONST_TAG = (byte) 0x5C;
 
@@ -451,7 +451,7 @@ public final class PIV {
    * @param offset The starting offset of the CDATA section
    * @param length The length of the CDATA section
    */
-  public void putData(byte[] buffer, short offset, short length) {
+  public void putData(byte[] buffer, short offset, short length) throws ISOException {
 
     final byte CONST_TAG = (byte) 0x5C;
     final byte CONST_DATA = (byte) 0x53;
@@ -582,7 +582,7 @@ public final class PIV {
    * @param offset The starting offset of the CDATA element
    * @param length The length of the CDATA element
    */
-  public void verify(byte id, byte[] buffer, short offset, short length) {
+  public void verify(byte id, byte[] buffer, short offset, short length) throws ISOException {
 
     //
     // PRE-CONDITIONS
@@ -671,7 +671,7 @@ public final class PIV {
    *
    * @param id The requested PIN reference
    */
-  public void verifyGetStatus(byte id) {
+  public void verifyGetStatus(byte id) throws ISOException {
 
     OwnerPIN pin = null;
 
@@ -716,7 +716,7 @@ public final class PIV {
    *
    * @param id The requested PIN reference
    */
-  public void verifyResetStatus(byte id) {
+  public void verifyResetStatus(byte id) throws ISOException {
 
     // The security status of the key reference specified in P2 shall be set to FALSE and
     // the retry counter associated with the key reference shall remain unchanged.
@@ -759,7 +759,7 @@ public final class PIV {
    * @param offset The starting offset of the CDATA element
    * @param length The length of the CDATA element
    */
-  public void changeReferenceData(byte id, byte[] buffer, short offset, short length) {
+  public void changeReferenceData(byte id, byte[] buffer, short offset, short length) throws ISOException {
 
     //
     // PRE-CONDITIONS
@@ -847,8 +847,7 @@ public final class PIV {
     // intermediate retry value (see Section 3.2.1),
     // then the reference data associated with the key reference shall not be changed and the PIV
     // Card Application shall return the status word '69 83'.
-    // TODO: This needs to check the contactless interface right?
-    if (pin.getTriesRemaining() <= intermediateLimit) ISOException.throwIt(SW_OPERATION_BLOCKED);
+    if (cspPIV.getIsContactless() && (pin.getTriesRemaining()) <= intermediateLimit) ISOException.throwIt(SW_OPERATION_BLOCKED);
 
     // If the authentication data in the command data field does not match the current value of the
     // reference data or if either the authentication data or the new reference data in the command
@@ -935,15 +934,15 @@ public final class PIV {
    * @param offset The starting offset of the CDATA element
    * @param length The length of the CDATA element
    */
-  public void resetRetryCounter(byte id, byte[] buffer, short offset, short length) {
+  public void resetRetryCounter(byte id, byte[] buffer, short offset, short length) throws ISOException {
 
     //
     // PRE-CONDITIONS
     //
 
     // PRE-CONDITION 1 - Check if we are permitted to use this command over the contactless
-    // interface
-    //					 NOTE: We must check this for both the PIN and the PUK
+    // interface.
+    // NOTE: We must check this for both the PIN and the PUK
     if (!Config.FEATURE_PIN_OVER_CONTACTLESS && cspPIV.getIsContactless()) {
       ISOException.throwIt(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED);
     }
@@ -1030,13 +1029,13 @@ public final class PIV {
    * @param isSecureChannel Sets whether the current command was issued over a GlobalPlatform Secure
    *     Channel
    */
-  public void updateSecurityStatus(boolean isContactless, boolean isSecureChannel) {
+  public void updateSecurityStatus(boolean isContactless, boolean isSecureChannel) throws ISOException {
     cspPIV.setIsContactless(isContactless);
     cspPIV.setIsSecureChannel(isSecureChannel);
   }
 
   /** Clears any intermediate authentication status used by 'GENERAL AUTHENTICATE' */
-  private void authenticateReset() {
+  private void authenticateReset() throws ISOException {
     PIVSecurityProvider.zeroise(authenticationContext, (short) 0, LENGTH_AUTH_STATE);
   }
 
@@ -1050,7 +1049,7 @@ public final class PIV {
    * @param length The length of the CDATA element
    * @return The length of the return data
    */
-  public short generalAuthenticate(byte[] buffer, short offset, short length) {
+  public short generalAuthenticate(byte[] buffer, short offset, short length) throws ISOException {
 
     //
     // COMMAND CHAIN HANDLING
@@ -1488,7 +1487,7 @@ public final class PIV {
 
   // Variant C - RSA Key Transport
   private short generalAuthenticateCase1C(
-      PIVKeyObjectRSA key, short challengeOffset, short challengeLength) {
+      PIVKeyObjectRSA key, short challengeOffset, short challengeLength) throws ISOException {
 
     // Reset any other authentication intermediate state prior to any processing
     authenticateReset();
@@ -1590,7 +1589,7 @@ public final class PIV {
 
   // Variant E - Symmetric Internal Authentication
   private short generalAuthenticateCase1D(
-      PIVKeyObjectSYM key, short challengeOffset, short challengeLength) {
+      PIVKeyObjectSYM key, short challengeOffset, short challengeLength) throws ISOException {
 
     // Reset any other authentication intermediate state prior to any processing
     authenticateReset();
@@ -1649,7 +1648,7 @@ public final class PIV {
     return length;
   }
 
-  private short generalAuthenticateCase2(PIVKeyObjectSYM key) {
+  private short generalAuthenticateCase2(PIVKeyObjectSYM key) throws ISOException {
 
     //
     // CASE 2 - EXTERNAL AUTHENTICATE REQUEST
@@ -1723,7 +1722,7 @@ public final class PIV {
   }
 
   private short generalAuthenticateCase3(
-      PIVKeyObjectSYM key, short responseOffset, short responseLength) {
+      PIVKeyObjectSYM key, short responseOffset, short responseLength) throws ISOException {
 
     //
     // CASE 3 - EXTERNAL AUTHENTICATE RESPONSE
@@ -1779,7 +1778,7 @@ public final class PIV {
     return (short) 0;
   }
 
-  private short generalAuthenticateCase4(PIVKeyObjectSYM key) {
+  private short generalAuthenticateCase4(PIVKeyObjectSYM key) throws ISOException {
 
     //
     // CASE 4 - MUTUAL AUTHENTICATE REQUEST
@@ -1843,7 +1842,7 @@ public final class PIV {
       short witnessOffset,
       short witnessLength,
       short challengeOffset,
-      short challengeLength) {
+      short challengeLength) throws ISOException {
 
     //
     // CASE 5 - MUTUAL AUTHENTICATE RESPONSE
@@ -1934,7 +1933,7 @@ public final class PIV {
   }
 
   private short generalAuthenticateCase6(
-      PIVKeyObjectECC key, short exponentiationOffset, short exponentiationLength) {
+      PIVKeyObjectECC key, short exponentiationOffset, short exponentiationLength) throws ISOException {
 
     //
     // CASE 6 - EXPONENTIATION AUTHENTICATE RESPONSE
@@ -1997,7 +1996,7 @@ public final class PIV {
    * @param offset The offset of the CDATA element
    * @return The length of the return data
    */
-  public short generateAsymmetricKeyPair(byte[] buffer, short offset) {
+  public short generateAsymmetricKeyPair(byte[] buffer, short offset) throws ISOException {
 
     // Request Elements
     final byte CONST_TAG_TEMPLATE = (byte) 0xAC;
@@ -2079,7 +2078,7 @@ public final class PIV {
    * @param length The length of the PIN data
    * @return True if the supplied PIN conforms to the format requirements
    */
-  private boolean verifyPinFormat(byte id, byte[] buffer, short offset, short length) {
+  private boolean verifyPinFormat(byte id, byte[] buffer, short offset, short length) throws ISOException {
 
     final byte CONST_PAD = (byte) 0xFF;
 
@@ -2162,7 +2161,7 @@ public final class PIV {
    * @param offset - The starting offset of the CDATA section
    * @param length - The length of the CDATA section
    */
-  public void putDataAdmin(byte[] buffer, short offset, short length) {
+  public void putDataAdmin(byte[] buffer, short offset, short length) throws ISOException {
 
     final byte CONST_TAG_COMMAND = (byte) 0x30;
     final byte CONST_TAG_OPERATION = (byte) 0x8A;
@@ -2361,7 +2360,7 @@ public final class PIV {
    *     NOT require the old value to be supplied in order to change a key - It also supports
    *     updating the PIN/PUK values, without requiring knowledge of the old value
    */
-  public void changeReferenceDataAdmin(byte id, byte[] buffer, short offset, short length) {
+  public void changeReferenceDataAdmin(byte id, byte[] buffer, short offset, short length) throws ISOException {
 
     final byte CONST_TAG_SEQUENCE = (byte) 0x30;
 
@@ -2472,7 +2471,7 @@ public final class PIV {
    * @param offset The starting offset of the CDATA section
    * @return The length of the entire data object
    */
-  public short getDataExtended(byte[] buffer, short offset, short length) {
+  public short getDataExtended(byte[] buffer, short offset, short length) throws ISOException {
 
     final byte CONST_TAG = (byte) 0x5C;
     final short CONST_LEN = (short) 3;
@@ -2492,8 +2491,10 @@ public final class PIV {
     // PRE-CONDITIONS
     //
     
+    // Copy the APDU buffer to the scratch buffer so that we can reference it with our TLVReader
+    Util.arrayCopyNonAtomic(buffer, offset, scratch, (short)0, length);
     TLVReader reader = TLVReader.getInstance();
-    reader.init(buffer, offset, length);
+    reader.init(scratch, (short)0, length);
 
     // PRE-CONDITION 1 - The 'TAG' data element must be present
     if (!reader.match(CONST_TAG)) {
@@ -2513,7 +2514,7 @@ public final class PIV {
     // Retrieve the 2-byte extended data identifier
     offset = reader.getDataOffset();
     offset++; // Move to the 2nd data byte
-    short id = Util.getShort(buffer, offset);
+    short id = Util.getShort(scratch, offset);
     
     //
     // EXECUTION
@@ -2526,7 +2527,7 @@ public final class PIV {
 	// Prepare the writer to start at offset 2 to allow for the CONST_TAG_DATA tag and length
 	// NOTE: We write it later when we know what the actual length is
     TLVWriter writer = TLVWriter.getInstance();
-	writer.init(buffer, (short)2, TLV.LENGTH_1BYTE_MAX, TLV.ASN1_SEQUENCE);
+	writer.init(scratch, (short)2, TLV.LENGTH_1BYTE_MAX, TLV.ASN1_SEQUENCE);
     
     switch (id) {
 	    
@@ -2552,7 +2553,6 @@ public final class PIV {
        # Would be encoded using DER-TLV as:
        300C8001 01810102 82010383 0100       
       */
-      
       writer.write(TLV.ASN1_INTEGER, Config.VERSION_MAJOR);
       writer.write(TLV.ASN1_INTEGER, Config.VERSION_MINOR);
       writer.write(TLV.ASN1_INTEGER, Config.VERSION_REVISION);
@@ -2597,9 +2597,7 @@ public final class PIV {
       // Available volatile memory
       // Total non-volatile memory
       // Available non-volatile memory
-      
-      
-  
+
       // Calculate the number of keys initialised      
       writer.write(TLV.ASN1_ENUMERATED, GPSystem.getCardContentState());
       length = writer.finish();
@@ -2616,11 +2614,15 @@ public final class PIV {
     
     // Reset to the start of the buffer to write the response tag
     offset = (short)0;
-    buffer[offset++] = CONST_TAG_DATA;
+    scratch[offset++] = CONST_TAG_DATA;
 	length ++;
-    buffer[offset] = (byte)length;    
+    scratch[offset] = (byte)length;    
 	length ++;
-      	
+
+    // STEP 1 - Set up the outgoing chainbuffer
+    chainBuffer.setOutgoing(scratch, (short) 0, length, false);
+
+    // Done - return how many bytes we will process
   	return length;
   }
 

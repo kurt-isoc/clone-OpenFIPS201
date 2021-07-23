@@ -115,6 +115,7 @@ public final class OpenFIPS201 extends Applet {
     }
   }
 
+  @Override
   public void process(APDU apdu) {
     if (selectingApplet()) {
       processPIV_SELECT(apdu);
@@ -315,8 +316,10 @@ public final class OpenFIPS201 extends Applet {
 
     final byte P1 = (byte) 0x3F;
     final byte P2 = (byte) 0xFF;
+    final byte P2_EXTENDED = (byte) 0x00;
 
     byte[] buffer = apdu.getBuffer();
+    short length = (short) (buffer[ISO7816.OFFSET_LC] & 0xFF);
 
     /*
      * PRE-CONDITIONS
@@ -328,7 +331,10 @@ public final class OpenFIPS201 extends Applet {
     }
 
     // PRE-CONDITION 2 - The P2 value must be equal to the constant 'FF'
-    if (buffer[ISO7816.OFFSET_P2] != P2) {
+    boolean extended = false;
+    if (buffer[ISO7816.OFFSET_P2] == P2_EXTENDED) {
+	    extended = true;
+    } else if (buffer[ISO7816.OFFSET_P2] != P2) {
       ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
     }
 
@@ -337,7 +343,11 @@ public final class OpenFIPS201 extends Applet {
      */
 
     // STEP 1 - Call the PIV 'GET DATA' command
-    piv.getData(buffer, ISO7816.OFFSET_CDATA);
+    if (extended) {
+      piv.getDataExtended(buffer, ISO7816.OFFSET_CDATA, length);
+    } else {
+      piv.getData(buffer, ISO7816.OFFSET_CDATA);	    
+    }
 
     // NOTE: If no exception occurred during processing, the ChainBuffer now contains a reference
     //		 to a data object to write to the client.

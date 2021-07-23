@@ -67,6 +67,10 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   protected PIVKeyObjectRSA(
       byte id, byte modeContact, byte modeContactless, byte mechanism, byte role, byte attributes) {
     super(id, modeContact, modeContactless, mechanism, role, attributes);
+    
+    // Check if this mechanism is supported
+    if (cipher == null) ISOException.throwIt(ISO7816.SW_FUNC_NOT_SUPPORTED);    
+    
   }
 
   /*
@@ -100,7 +104,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
    * @param length the length og the element
    */
   @Override
-  public void updateElement(byte element, byte[] buffer, short offset, short length) {
+  public void updateElement(byte element, byte[] buffer, short offset, short length) throws ISOException {
 
     switch (element) {
 
@@ -220,7 +224,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
    */
   @Override
   public short sign(
-      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
+      byte[] inBuffer, short inOffset, short inLength, byte[] outBuffer, short outOffset) throws ISOException {
     if (inLength != getBlockLength()) {
       ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
     }
@@ -260,7 +264,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
   }
 
   @Override
-  public short generate(byte[] outBuffer, short outOffset) {
+  public short generate(byte[] outBuffer, short outOffset) throws CardRuntimeException {
 
     KeyPair keyPair;
     try {
@@ -327,7 +331,7 @@ public final class PIVKeyObjectRSA extends PIVKeyObjectPKI {
 
   /** @return The length, in bytes, of the key */
   @Override
-  public short getKeyLengthBits() {
+  public short getKeyLengthBits() throws ISOException {
     switch (getMechanism()) {
       case PIV.ID_ALG_RSA_1024:
         return KeyBuilder.LENGTH_RSA_1024;
